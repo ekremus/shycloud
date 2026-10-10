@@ -58,4 +58,16 @@ struct PauseTargetTests {
             #expect(!inspector.processes(for: target).contains { $0.pid == 1 })
         }
     }
+
+    @Test func otherUIDInspectorSeesNothing() throws {
+        let mine = DarwinProcessInspector()
+        let other = DarwinProcessInspector(uid: getuid() &+ 1)
+        for target in PauseTarget.allCases {
+            #expect(other.processes(for: target).isEmpty)
+        }
+        // bird runs as the current user; an inspector for another uid must reject it.
+        let bird = try #require(mine.processes(for: .drive).first)
+        #expect(mine.target(of: bird) == .drive)
+        #expect(other.target(of: bird) == nil)
+    }
 }

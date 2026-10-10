@@ -22,7 +22,11 @@ public struct DarwinProcessInspector: ProcessInspecting {
         guard let info = bsdInfo(id.pid),
               info.pbi_uid == uid,
               startTime(of: info) == id.startTime,
-              let path = path(of: id.pid)
+              let path = path(of: id.pid),
+              // Re-validate after the path read so a recycled pid can't lend its path to a stale identity.
+              let recheck = bsdInfo(id.pid),
+              recheck.pbi_uid == uid,
+              startTime(of: recheck) == id.startTime
         else { return nil }
         return PauseTarget.target(forExecutablePath: path)
     }
