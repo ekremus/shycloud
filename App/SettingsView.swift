@@ -94,8 +94,9 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 440)
-        .fixedSize(horizontal: false, vertical: true)
+        // Fixed size: letting a grouped Form size the window (fixedSize + preferredContentSize)
+        // causes an endless update-constraints loop that crashes AppKit. The Form scrolls if needed.
+        .frame(width: 440, height: 620)
         .onAppear(perform: refresh)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refresh() }
     }
