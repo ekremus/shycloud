@@ -197,32 +197,22 @@ struct SyncControllerTests {
         #expect(h.processes.log.first == "resume drive,photoAnalysis,cloudKit")
     }
 
-    @Test func firstLaunchDoesNotCatchUp() {
+    @Test func firstLaunchInitialisesLastSyncedAt() {
         let h = Harness("2026-10-12 14:00")
         h.controller.start(registerHelper: {})
         #expect(h.settings.lastSyncedAt == h.date)
         #expect(h.controller.isPausedNow)
     }
 
-    @Test func staleSyncTriggersCatchUpThenPauses() {
+    @Test func wakeAfterMissedWindowStaysPaused() {
         let h = Harness("2026-10-12 14:00")
-        h.settings.lastSyncedAt = TestTime.date("2026-10-11 08:00")
-        h.controller.start(registerHelper: {})
-        #expect(h.processes.paused.isEmpty)
-        #expect(h.controller.status == .catchingUp(until: TestTime.date("2026-10-12 14:30")))
-        h.at("2026-10-12 14:30")
-        h.controller.tick()
-        #expect(h.processes.paused == [.drive])
-        #expect(h.settings.lastSyncedAt == TestTime.date("2026-10-12 14:30"))
-    }
-
-    @Test func wakeAfterMissedWindowCatchesUp() {
-        let h = Harness("2026-10-12 14:00")
+        h.settings.lastSyncedAt = TestTime.date("2026-10-11 09:00") // 30 h old at wake
         h.controller.start(registerHelper: {})
         h.controller.handleWillSleep()
         h.at("2026-10-13 15:00") // slept through the whole window
         h.controller.handleWake()
-        #expect(h.controller.status == .catchingUp(until: TestTime.date("2026-10-13 15:30")))
+        #expect(h.controller.status == .paused(until: TestTime.date("2026-10-14 02:00")))
+        #expect(h.processes.paused == [.drive])
     }
 
     @Test func syncCreditAfterTwentyMinutes() {
@@ -298,31 +288,6 @@ struct SyncControllerTests {
     }
 
     // MARK: Fix round 1
-
-    @Test func sleepCutsCatchUpShortAndNextWakeCatchesUpAgain() {
-        let h = Harness("2026-10-12 14:00")
-        h.settings.lastSyncedAt = TestTime.date("2026-10-11 08:00")
-        h.controller.start(registerHelper: {})
-        #expect(h.controller.status == .catchingUp(until: TestTime.date("2026-10-12 14:30")))
-        h.at("2026-10-12 14:10")
-        h.controller.handleWillSleep()
-        h.at("2026-10-13 15:00")
-        h.controller.handleWake()
-        #expect(h.controller.status == .catchingUp(until: TestTime.date("2026-10-13 15:30")))
-        #expect(h.processes.paused.isEmpty)
-    }
-
-    @Test func catchUpRunningIntoWindowReportsWindowEnd() {
-        let h = Harness("2026-10-12 01:45")
-        h.settings.lastSyncedAt = TestTime.date("2026-10-10 19:45") // 30 h old
-        h.controller.start(registerHelper: {})
-        h.at("2026-10-12 01:50")
-        h.controller.tick()
-        #expect(h.controller.status == .catchingUp(until: TestTime.date("2026-10-12 09:00")))
-        h.at("2026-10-12 02:05")
-        h.controller.tick()
-        #expect(h.controller.status == .syncing(until: TestTime.date("2026-10-12 09:00")))
-    }
 
     @Test func quitKeepPausedResumesWhenRecordCannotBeWritten() throws {
         let h = Harness("2026-10-12 14:00")

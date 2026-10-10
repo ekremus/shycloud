@@ -8,7 +8,6 @@
 - ⏸ **Sync Off** — vacation / travel / hotspot mode, fully paused
 - ▶️ **Sync On** — normal iCloud, one click
 - 🛟 **Safety first** — iCloud resumes on quit (unless you choose Keep Paused), sleep, logout and crashes (built-in safety helper)
-- 🌙 **Catch-up** — slept through the window? It syncs for 30 minutes after you wake
 - 🫥 **Hideable** — remove the menu bar icon; it keeps working in the background
 - 🍎 Apple Silicon · macOS 26+ · English & Türkçe · no tracking, no account
 

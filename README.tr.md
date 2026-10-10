@@ -8,7 +8,6 @@
 - ⏸ **Senkron Kapalı** — tatil / seyahat / mobil internet modu
 - ▶️ **Senkron Açık** — normal iCloud, tek tık
 - 🛟 **Önce güvenlik** — çıkışta (Duraklatılmış Kalsın seçilmedikçe), uykuda, oturum kapatınca ve çökmede iCloud geri açılır
-- 🌙 **Telafi** — gece Mac uykudaysa uyanınca 30 dakika boyunca senkronlar
 - 🫥 **Gizlenebilir** — menü ikonunu kaldırın, arka planda çalışmaya devam eder
 - 🍎 Apple Silicon · macOS 26+ · Türkçe & English · takip yok, hesap yok
 

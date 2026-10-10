@@ -4,7 +4,6 @@ import Foundation
 public enum SyncStatus: Equatable, Sendable {
     case syncing(until: Date?)
     case paused(until: Date?)
-    case catchingUp(until: Date)
     case helperDisabled
     /// Would pause, but the safety helper's watchdog hasn't run recently (fresh install or after sleep).
     case waitingForHelper

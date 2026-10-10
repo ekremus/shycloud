@@ -20,7 +20,7 @@ Useful commands:
 | 6 | Optional targets | Tick Photo analysis, untick again | `photoanalysisd` `T`, then `S` immediately |
 | 7 | Respawn | While paused: `kill -9 <bird pid>` | New `bird` pid appears and is `T` within a few seconds |
 | 8 | Sleep/wake | Sync Off → sleep 1 min → wake | During sleep targets resumed; after wake the status may show "Starting safety helper…" for up to ~90 s (launchd skips the watchdog's runs during sleep), then pauses again |
-| 9 | Catch-up | `defaults write com.ekremus.ShyCloud lastSyncedAt -date "2026-01-01 00:00:00 +0000"`, relaunch outside window | Status "Catching up · pauses at …" for 30 min |
+| 9 | (removed) | Catch-up sync was removed (owner decision 2026-10-10); row number kept so others are not renumbered | n/a. Outside the window with Scheduled mode, nothing syncs even if `lastSyncedAt` is old |
 | 10 | Quit, resume | Sync Off → Quit → Resume iCloud | `bird` `S`; no `keep-paused.json` |
 | 11 | Quit, keep paused | Sync Off → Quit → Keep Paused, wait 3 min | `bird` stays `T`; `keep-paused.json` exists; watchdog does not resume |
 | 12 | Keep-paused stale | After 11: `kill -9 <bird pid>` and wait ≤ 2 min | `keep-paused.json` deleted by watchdog; new `bird` running |

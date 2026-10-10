@@ -6,8 +6,6 @@ import Observation
 @Observable
 public final class SyncController {
     public static let syncCreditDuration: TimeInterval = 20 * 60
-    public static let catchUpDuration: TimeInterval = 30 * 60
-    public static let staleSyncThreshold: TimeInterval = 24 * 3600
     /// After power-off nothing re-pauses for this long; if we are still running then, the logout was cancelled.
     public static let powerOffHold: TimeInterval = 60
 
@@ -22,7 +20,6 @@ public final class SyncController {
     @ObservationIgnored private let calendar: @MainActor () -> Calendar
     @ObservationIgnored private let helperState: @MainActor () -> SafetyHelperState
     @ObservationIgnored private var runningSince: Date?
-    @ObservationIgnored private var catchUpUntil: Date?
     /// Between willSleep and didWake nothing may re-pause (a late tick could fire).
     @ObservationIgnored private var isAsleep = false
     /// After Quit nothing may re-pause (a late tick or exit callback could fire).
@@ -59,10 +56,9 @@ public final class SyncController {
         processes.onPausedProcessExit = { [weak self] in self?.apply() }
         settings.onChange = { [weak self] in self?.apply() }
         if settings.lastSyncedAt == nil {
-            // iCloud ran normally before ShyCloud existed; don't force a catch-up on first launch.
+            // iCloud ran normally before ShyCloud existed; start the "Last synced" line from now.
             settings.lastSyncedAt = now()
         }
-        considerCatchUp()
         apply()
     }
 
@@ -75,7 +71,6 @@ public final class SyncController {
     public func handleWake() {
         isAsleep = false
         writeHeartbeat()
-        considerCatchUp()
         apply()
     }
 
@@ -83,7 +78,6 @@ public final class SyncController {
         isAsleep = true
         processes.resumeAll()
         runningSince = nil
-        catchUpUntil = nil // sleep cuts a catch-up short; the next wake decides afresh
         status = .syncing(until: nil)
         activity.setHolding(false)
     }
@@ -122,21 +116,20 @@ public final class SyncController {
         }
         let cal = calendar()
         let schedule = settings.schedule
-        // Credit a completed sync before the catch-up can expire on this same tick.
+        // Credit a completed sync on this tick.
         if let since = runningSince, date.timeIntervalSince(since) >= Self.syncCreditDuration {
             settings.lastSyncedAt = date
         }
-        if let until = catchUpUntil, date >= until { catchUpUntil = nil }
 
         let insideWindow = schedule.isInside(date, calendar: cal)
         let wantsRunning: Bool
         switch settings.mode {
         case .alwaysSync: wantsRunning = true
         case .alwaysPause: wantsRunning = false
-        case .scheduled: wantsRunning = insideWindow || catchUpUntil != nil
+        case .scheduled: wantsRunning = insideWindow
         }
         let nextChange: Date? = settings.mode == .scheduled
-            ? scheduledNextChange(at: date, insideWindow: insideWindow, calendar: cal)
+            ? settings.schedule.nextChange(after: date, calendar: cal)
             : nil
 
         let helper = helperState()
@@ -156,23 +149,10 @@ public final class SyncController {
             // Not pausing: either the helper is still starting up (or launchd skipped its runs during sleep)
             // or it is genuinely unavailable.
             status = isHeartbeatWritten && helper == .starting ? .waitingForHelper : .helperDisabled
-        } else if settings.mode == .scheduled, !insideWindow, catchUpUntil != nil, let nextChange {
-            status = .catchingUp(until: nextChange)
         } else {
             status = .syncing(until: nextChange)
         }
         activity.setHolding(false)
-    }
-
-    /// When the running/paused state will next flip. Inside the window that is the window's end;
-    /// a catch-up that runs into the window lasts until the window closes.
-    private func scheduledNextChange(at date: Date, insideWindow: Bool, calendar cal: Calendar) -> Date {
-        let schedule = settings.schedule
-        let windowChange = schedule.nextChange(after: date, calendar: cal)
-        guard !insideWindow, let until = catchUpUntil else { return windowChange }
-        guard windowChange <= until else { return until }
-        let windowEnd = schedule.nextChange(after: windowChange, calendar: cal)
-        return max(until, windowEnd)
     }
 
     private func writeHeartbeat() {
@@ -181,17 +161,6 @@ public final class SyncController {
             isHeartbeatWritten = true
         } catch {
             isHeartbeatWritten = false
-        }
-    }
-
-    private func considerCatchUp() {
-        let date = now()
-        if let until = catchUpUntil, date >= until { catchUpUntil = nil }
-        guard settings.mode == .scheduled, catchUpUntil == nil else { return }
-        guard !settings.schedule.isInside(date, calendar: calendar()) else { return }
-        let last = settings.lastSyncedAt ?? .distantPast
-        if date.timeIntervalSince(last) > Self.staleSyncThreshold {
-            catchUpUntil = date.addingTimeInterval(Self.catchUpDuration)
         }
     }
 }

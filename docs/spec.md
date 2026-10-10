@@ -30,7 +30,7 @@ Exactly one mode is active, persisted across launches.
 
 - Window = one daily start and end time (hour + minute), same every day. End earlier than start means it crosses midnight. Start == end is invalid; Settings prevents it.
 - Times are displayed in the user's locale format.
-- **Catch-up sync (scheduled mode only):** a laptop asleep during the whole window would never sync. ShyCloud records `lastSyncWindowCompletedAt` (set when targets have been running for ≥ 20 continuous minutes). On wake or launch, if that is older than 24 h, targets run for a 30-minute catch-up, then the schedule resumes. Status line shows `Catching up · pauses at HH:MM`.
+- Catch-up sync removed by owner decision 2026-10-10: sync never runs outside the window unless the user chooses Sync On. ShyCloud still records `lastSyncedAt` (set when targets have been running for ≥ 20 continuous minutes) for the "Last synced" menu line only.
 
 ## 3. UI
 
@@ -49,7 +49,7 @@ Last synced: today 08:59                  (disabled)
   Quit ShyCloud    ⌘Q
 ```
 
-Status line variants: `Syncing`, `Syncing · pauses at 09:00`, `Paused`, `Paused · syncs at 02:00`, `Catching up · pauses at HH:MM`, `Safety helper disabled — not pausing`.
+Status line variants: `Syncing`, `Syncing · pauses at 09:00`, `Paused`, `Paused · syncs at 02:00`, `Safety helper disabled — not pausing`.
 Icon (SF Symbols, template rendering): running → `icloud`; paused → `icloud.slash`.
 
 ### 3.2 Quit
@@ -96,7 +96,7 @@ Single app target + one embedded LaunchAgent helper (both arm64). Units, each wi
 | `ProcessController` (protocol) + `SignalProcessController` | `pause(_ targets:)`, `resume(_ targets:)`, `resumeAll()`. Re-verifies path+uid immediately before each `kill(pid, SIGSTOP/SIGCONT)`. Returns the set of `(pid, startTime)` it stopped. Watches each paused pid with a `DispatchSource.makeProcessSource(.exit)`; on exit it asks `SyncController` to re-apply (catches respawn instantly). This is the only unit that touches other processes. |
 | `Settings` | UserDefaults-backed: mode, start, end, enabled optional targets, showInMenuBar, lastSyncWindowCompletedAt. Validation. |
 | `SafetyFiles` | Paths under `~/Library/Application Support/ShyCloud/`: `heartbeat` (Unix timestamp text, written every 30 s) and `keep-paused.json` (list of `{pid, startTime}`). |
-| `SyncController` (`@MainActor @Observable`) | Combines mode + schedule + catch-up into desired state; applies via `ProcessController` (idempotently, every time); re-applies on: settings change, wake (`NSWorkspace.shared.notificationCenter` `.didWakeNotification`), `.NSSystemClockDidChange`, `.NSSystemTimeZoneDidChange`, `.NSCalendarDayChanged` (all on `NotificationCenter.default`), process exit events, and a 30 s tick that also writes the heartbeat (state changes therefore take effect within ≤ 30 s of a window boundary). Resumes all on `.willSleepNotification` and `.willPowerOffNotification` (workspace center). While anything is paused holds `ProcessInfo.processInfo.beginActivity(options: .userInitiatedAllowingIdleSystemSleep, reason:)` so App Nap can't stall the heartbeat. Refuses to pause if watchdog status ≠ `.enabled`. |
+| `SyncController` (`@MainActor @Observable`) | Combines mode + schedule into desired state; applies via `ProcessController` (idempotently, every time); re-applies on: settings change, wake (`NSWorkspace.shared.notificationCenter` `.didWakeNotification`), `.NSSystemClockDidChange`, `.NSSystemTimeZoneDidChange`, `.NSCalendarDayChanged` (all on `NotificationCenter.default`), process exit events, and a 30 s tick that also writes the heartbeat (state changes therefore take effect within ≤ 30 s of a window boundary). Resumes all on `.willSleepNotification` and `.willPowerOffNotification` (workspace center). While anything is paused holds `ProcessInfo.processInfo.beginActivity(options: .userInitiatedAllowingIdleSystemSleep, reason:)` so App Nap can't stall the heartbeat. Refuses to pause if watchdog status ≠ `.enabled`. |
 | `ShyCloudWatchdog` (tiny CLI target) | Plist at `Contents/Library/LaunchAgents/com.ekremus.ShyCloud.Watchdog.plist` with `BundleProgram` = `Contents/MacOS/ShyCloudWatchdog`, `StartInterval` 60, registered via `SMAppService.agent(plistName:)` on every launch regardless of "Open at login". Each run: if heartbeat ≤ 120 s old → exit. Else if `keep-paused.json` exists and every listed `{pid, startTime}` is still alive and stopped → exit. Else delete `keep-paused.json` and SIGCONT every allowlisted target process of this uid → exit. Worst-case recovery ≈ 3 min. |
 | UI | `ShyCloudApp` (scenes), `MenuContent`, `SettingsView`, quit alert, `AppDelegate` (reopen, terminate). |
 
@@ -122,7 +122,7 @@ Single app target + one embedded LaunchAgent helper (both arm64). Units, each wi
 
 ## 7. Testing
 
-- **Unit (Swift Testing):** `Schedule` (inside/outside, midnight crossing, exact boundaries, DST spring-forward with start 02:00 in America/New_York, DST fall-back, time-zone change); `SyncController` with fake `ProcessController`/inspector/clock (mode switching, settings changes, catch-up trigger and expiry, wake, launch order, quit paths, refuse-to-pause when watchdog disabled); watchdog decision logic as a pure function `WatchdogDecision.decide(heartbeatAge:keepPaused:liveStopped:) -> .exit | .resume`; `PauseTarget` path allowlist rejects `/Library/Developer/CoreSimulator/...` paths.
+- **Unit (Swift Testing):** `Schedule` (inside/outside, midnight crossing, exact boundaries, DST spring-forward with start 02:00 in America/New_York, DST fall-back, time-zone change); `SyncController` with fake `ProcessController`/inspector/clock (mode switching, settings changes, wake staying paused after a missed window, launch order, quit paths, refuse-to-pause when watchdog disabled); watchdog decision logic as a pure function `WatchdogDecision.decide(heartbeatAge:keepPaused:liveStopped:) -> .exit | .resume`; `PauseTarget` path allowlist rejects `/Library/Developer/CoreSimulator/...` paths.
 - **Manual checklist (`docs/TESTING.md`)** on real processes: pause → `ps -o stat` shows `T`; resume → `S`/`R`; Simulator `cloudd` untouched; Finder with a dataless file while paused; sleep/wake; logout/login; force-quit → watchdog resumes within ~3 min; Quit + Keep Paused survives watchdog; Quit + Resume; hidden-icon reopen; login item approval flow; safety helper disabled warning.
 
 ## 8. Release & discoverability
