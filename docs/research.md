@@ -20,6 +20,9 @@ SEO phrases: pause iCloud sync mac · schedule iCloud Drive sync · stop iCloud 
 GitHub topics: icloud, icloud-drive, macos, menu-bar-app, swift, swiftui, apple-silicon, sync-pause.
 
 ## Technical findings (verified on macOS 27.0.1 unless marked [web]/[inferred])
+
+- **Verified 2026-10-10:** `kill -STOP` on bird from a normal user shell → `ps` state `T`; `kill -CONT` → `S`/`R`, same PID, sync continues.
+- **Verified:** Simulator runtimes run their own `cloudd`/`photoanalysisd` as the same uid under `/Library/Developer/CoreSimulator/...` → must match by absolute path allowlist, never by name.
 - Sync processes, all running as the user (no root): `bird`, `fileproviderd`, `iCloudDriveFileProvider.appex`, `cloudd`, `photoanalysisd`, `cloudphotod` (on demand). `mds` (Spotlight) runs as root → out of scope.
 - **No public API** to pause iCloud Drive. `brctl` on macOS 27 has no pause/download/evict. NSFileProviderManager only controls your own provider.
 - **Only working method:** SIGSTOP / SIGCONT on `bird`. `kill` doesn't work (launchd respawns); stopped process keeps its PID so it isn't respawned.
