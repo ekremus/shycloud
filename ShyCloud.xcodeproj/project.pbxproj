@@ -18,7 +18,7 @@
 		68BF819B5DA9881CE2FCFE82 /* ShyCloudApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A462CFE8CA75A37143B24213 /* ShyCloudApp.swift */; };
 		6AD91E965A56D6E68258A52D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F49FDDF777CC039E55052629 /* SettingsView.swift */; };
 		6B2453F1C96BE49A08A327AA /* com.ekremus.ShyCloud.Watchdog.plist in CopyFiles */ = {isa = PBXBuildFile; fileRef = DBE6FDCEC51DF5A7CB8EDEAE /* com.ekremus.ShyCloud.Watchdog.plist */; };
-		70FFA4920052151301C0C3B9 /* ShyCloudWatchdog in Embed Dependencies */ = {isa = PBXBuildFile; fileRef = 799CC776E63E3C9887C1E3F4 /* ShyCloudWatchdog */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		70FFA4920052151301C0C3B9 /* ShyCloudWatchdog in Embed Dependencies */ = {isa = PBXBuildFile; fileRef = 799CC776E63E3C9887C1E3F4 /* ShyCloudWatchdog */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		7313E2FA075EAB29D0228EDF /* ShyCloudCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2CDAEC4E45C3492F3A1C1FC0 /* ShyCloudCore */; };
 		7C65BA8075F89BE2A78EEEC4 /* LoginItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6D768649C79D3102FC27611 /* LoginItem.swift */; };
 		87FB07480D094966BCE3B41A /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = C68546D975F6D2B3F64C83B7 /* AppEnvironment.swift */; };
@@ -425,6 +425,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				OTHER_CODE_SIGN_FLAGS = "--identifier com.ekremus.ShyCloud.Watchdog";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ekremus.ShyCloud.Watchdog;
 				PRODUCT_NAME = ShyCloudWatchdog;
 				SDKROOT = macosx;
@@ -513,6 +514,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				OTHER_CODE_SIGN_FLAGS = "--identifier com.ekremus.ShyCloud.Watchdog";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ekremus.ShyCloud.Watchdog;
 				PRODUCT_NAME = ShyCloudWatchdog;
 				SDKROOT = macosx;

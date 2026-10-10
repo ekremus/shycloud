@@ -16,6 +16,8 @@ DIST=/private/tmp/shycloud-dist
 APP="$DIST/export/ShyCloud.app"
 DMG="$DIST/ShyCloud-$VERSION.dmg"
 cd "$ROOT"
+# Regenerate first: if project.yml and the committed project disagree, the clean-tree guard below fails.
+xcodegen generate
 if ! git diff --quiet || ! git diff --cached --quiet; then echo "Working tree not clean" >&2; exit 1; fi
 [ "$(git branch --show-current)" = main ] || { echo "Must be on main" >&2; exit 1; }
 BUILD=$(git rev-list --count HEAD)
@@ -34,7 +36,6 @@ notarize() {
 
 rm -rf "$DIST" && mkdir -p "$DIST"
 
-xcodegen generate
 xcodebuild -project ShyCloud.xcodeproj -scheme ShyCloud -configuration Release \
   -derivedDataPath "$DD" MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" \
   -archivePath "$DIST/ShyCloud.xcarchive" archive
@@ -51,6 +52,13 @@ PLIST
 xcodebuild -exportArchive -archivePath "$DIST/ShyCloud.xcarchive" -exportOptionsPlist "$DIST/export.plist" -exportPath "$DIST/export"
 
 codesign --verify --deep --strict "$APP"
+WATCHDOG_SIG=$(codesign -dvv "$APP/Contents/MacOS/ShyCloudWatchdog" 2>&1)
+if ! printf '%s\n' "$WATCHDOG_SIG" | grep -q "Authority=Developer ID Application" \
+   || ! printf '%s\n' "$WATCHDOG_SIG" | grep -q "Timestamp="; then
+  echo "Embedded watchdog is not Developer ID signed with a timestamp" >&2
+  printf '%s\n' "$WATCHDOG_SIG" >&2
+  exit 1
+fi
 lipo -archs "$APP/Contents/MacOS/ShyCloud" | grep -qx arm64
 
 ditto -c -k --keepParent "$APP" "$DIST/ShyCloud.zip"

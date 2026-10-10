@@ -46,6 +46,7 @@ targets:
       - package: Sparkle
       - target: ShyCloudWatchdog
         embed: true
+        codeSign: true
         copy:
           destination: executables
     info:
@@ -80,6 +81,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.ekremus.ShyCloud.Watchdog
         PRODUCT_NAME: ShyCloudWatchdog
         SKIP_INSTALL: YES
+        OTHER_CODE_SIGN_FLAGS: "--identifier com.ekremus.ShyCloud.Watchdog"
 schemes:
   ShyCloud:
     build:
