@@ -8,6 +8,8 @@ public final class SyncController {
     public static let syncCreditDuration: TimeInterval = 20 * 60
     public static let catchUpDuration: TimeInterval = 30 * 60
     public static let staleSyncThreshold: TimeInterval = 24 * 3600
+    /// After power-off nothing re-pauses for this long; if we are still running then, the logout was cancelled.
+    public static let powerOffHold: TimeInterval = 60
 
     public private(set) var status: SyncStatus = .syncing(until: nil)
     public var isPausedNow: Bool { status.isPaused }
@@ -23,8 +25,10 @@ public final class SyncController {
     @ObservationIgnored private var catchUpUntil: Date?
     /// Between willSleep and didWake nothing may re-pause (a late tick could fire).
     @ObservationIgnored private var isAsleep = false
-    /// After power-off or Quit nothing may re-pause (a late tick or exit callback could fire).
+    /// After Quit nothing may re-pause (a late tick or exit callback could fire).
     @ObservationIgnored private var isTerminating = false
+    /// Power-off/logout began here; nothing re-pauses until `powerOffHold` passes (a cancelled logout must not latch).
+    @ObservationIgnored private var powerOffAt: Date?
     /// Without a fresh heartbeat the watchdog can't protect a pause, so we never pause (spec §5.7).
     @ObservationIgnored private var isHeartbeatWritten = false
 
@@ -85,7 +89,7 @@ public final class SyncController {
     }
 
     public func handlePowerOff() {
-        isTerminating = true
+        powerOffAt = now()
         processes.resumeAll()
         status = .syncing(until: nil)
         activity.setHolding(false)
@@ -110,6 +114,12 @@ public final class SyncController {
     public func apply() {
         guard !isAsleep, !isTerminating else { return }
         let date = now()
+        if let powerOffAt {
+            let elapsed = date.timeIntervalSince(powerOffAt)
+            // A clock set backwards must not stretch the hold either.
+            if elapsed >= 0, elapsed < Self.powerOffHold { return }
+            self.powerOffAt = nil
+        }
         let cal = calendar()
         let schedule = settings.schedule
         // Credit a completed sync before the catch-up can expire on this same tick.

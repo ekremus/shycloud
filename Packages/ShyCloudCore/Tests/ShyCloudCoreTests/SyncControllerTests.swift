@@ -346,4 +346,30 @@ struct SyncControllerTests {
         #expect(h.processes.paused == [.drive])
         #expect(h.files.readKeepPaused() == [ProcessIdentity(pid: 100, startTime: 1)])
     }
+
+    // MARK: Final review fixes
+
+    @Test func cancelledLogoutReappliesScheduleAfterSixtySeconds() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.controller.handlePowerOff()
+        h.date = h.date.addingTimeInterval(30)
+        h.controller.tick()
+        #expect(h.processes.paused.isEmpty)
+        h.date = h.date.addingTimeInterval(31) // 61 s after power-off: logout was cancelled
+        h.controller.tick()
+        #expect(h.processes.paused == [.drive])
+        #expect(h.controller.isPausedNow)
+    }
+
+    @Test func helperDisabledWhilePausedResumesOnNextTick() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        #expect(h.processes.paused == [.drive])
+        h.helperEnabled = false
+        h.controller.tick()
+        #expect(h.processes.paused.isEmpty)
+        #expect(h.controller.status == .helperDisabled)
+        #expect(!h.activity.holding)
+    }
 }
