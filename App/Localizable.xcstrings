@@ -1,7 +1,8 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "Acknowledgements…" : { "localizations" : { "tr" : { "stringUnit" : { "state" : "translated", "value" : "Teşekkürler…" } } } },
+    "Acknowledgements…" : { "localizations" : { "tr" : { "stringUnit" : { "state" : "translated", "value" : "Lisanslar…" } } } },
+    "Starting safety helper…" : { "localizations" : { "tr" : { "stringUnit" : { "state" : "translated", "value" : "Güvenlik yardımcısı başlatılıyor…" } } } },
     "Includes Sparkle (MIT license)." : { "localizations" : { "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sparkle içerir (MIT lisansı)." } } } },
     "Automatically check for updates" : { "localizations" : { "tr" : { "stringUnit" : { "state" : "translated", "value" : "Güncellemeleri otomatik denetle" } } } },
     "Check for Updates…" : { "localizations" : { "tr" : { "stringUnit" : { "state" : "translated", "value" : "Güncellemeleri Denetle…" } } } },

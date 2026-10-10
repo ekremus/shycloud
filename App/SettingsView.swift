@@ -11,7 +11,8 @@ struct SettingsView: View {
     @State private var scheduleError = false
     @State private var loginOn = false
     @State private var loginNeedsApproval = false
-    @State private var helperEnabled = true
+    @State private var helperRegistered = true
+    @State private var helperWorking = true
     @State private var autoUpdate = true
 
     var body: some View {
@@ -75,8 +76,11 @@ struct SettingsView: View {
             }
 
             Section(String(localized: "Safety helper")) {
-                if helperEnabled {
+                if helperWorking {
                     Label(String(localized: "On — resumes iCloud if ShyCloud ever stops unexpectedly."), systemImage: "checkmark.shield")
+                } else if helperRegistered {
+                    Text("Starting safety helper…")
+                        .foregroundStyle(.secondary)
                 } else {
                     Text("Safety helper is disabled in System Settings › General › Login Items & Extensions. ShyCloud won't pause iCloud until it is enabled.")
                         .foregroundStyle(.orange)
@@ -101,7 +105,8 @@ struct SettingsView: View {
     private func refresh() {
         loginOn = environment.loginItem.isOn
         loginNeedsApproval = environment.loginItem.status == .requiresApproval
-        helperEnabled = environment.safetyHelper.isEnabled
+        helperRegistered = environment.safetyHelper.isEnabled
+        helperWorking = environment.isSafetyHelperWorking
         autoUpdate = environment.updater.automaticallyChecks
         environment.sync.apply()
     }

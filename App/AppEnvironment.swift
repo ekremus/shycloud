@@ -10,7 +10,14 @@ final class AppEnvironment {
     let safetyHelper: SafetyHelper
     let loginItem: LoginItem
     let updater: Updater
-    let sync: SyncController
+    private(set) lazy var sync: SyncController = SyncController(
+        settings: settings,
+        processes: SignalProcessController(),
+        files: .standard,
+        activity: ProcessActivityHolder(),
+        // Registered is not enough: the watchdog must also have actually run recently.
+        isHelperEnabled: { [unowned self] in self.isSafetyHelperWorking }
+    )
     var quitHandled = false
 
     private var tickTimer: Timer?
@@ -23,17 +30,12 @@ final class AppEnvironment {
         self.safetyHelper = helper
         self.loginItem = LoginItem()
         self.updater = Updater()
-        self.sync = SyncController(
-            settings: settings,
-            processes: SignalProcessController(),
-            files: .standard,
-            activity: ProcessActivityHolder(),
-            // Registered is not enough: the watchdog must also have actually run recently.
-            isHelperEnabled: {
-                helper.isEnabled
-                    && WatchdogDecision.isWatchdogAlive(lastRun: SafetyFiles.standard.readWatchdogRan(), now: Date())
-            }
-        )
+    }
+
+    /// Registration is enabled AND the watchdog ran recently (see `WatchdogDecision`).
+    var isSafetyHelperWorking: Bool {
+        safetyHelper.isEnabled
+            && WatchdogDecision.isWatchdogAlive(lastRun: SafetyFiles.standard.readWatchdogRan(), now: Date())
     }
 
     func start() {
