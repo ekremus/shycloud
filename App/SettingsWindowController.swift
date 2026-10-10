@@ -18,7 +18,10 @@ final class SettingsWindowController {
             window.center()
             self.window = window
         }
-        NSApp.activate()
-        window?.makeKeyAndOrderFront(nil)
+        guard let window else { return }
+        if window.isMiniaturized { window.deminiaturize(nil) }
+        NSRunningApplication.current.activate(options: [.activateAllWindows])
+        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
     }
 }

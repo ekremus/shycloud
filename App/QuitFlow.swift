@@ -21,7 +21,11 @@ enum QuitFlow {
             alert.informativeText = String(localized: "iCloud resumes automatically when you restart or log out.")
             alert.addButton(withTitle: String(localized: "Resume iCloud"))
             alert.addButton(withTitle: String(localized: "Keep Paused"))
-            keepPaused = alert.runModal() == .alertSecondButtonReturn
+            let cancel = alert.addButton(withTitle: String(localized: "Cancel"))
+            cancel.keyEquivalent = "\u{1b}"
+            let response = alert.runModal()
+            if response == .alertThirdButtonReturn { return }
+            keepPaused = response == .alertSecondButtonReturn
         }
         environment.sync.prepareToQuit(keepPaused: keepPaused)
         environment.quitHandled = true

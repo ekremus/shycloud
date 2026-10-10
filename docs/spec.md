@@ -53,30 +53,31 @@ Status line variants: `Syncing`, `Syncing · pauses at 09:00`, `Paused`, `Paused
 Icon (SF Symbols, template rendering): running → `icloud`; paused → `icloud.slash`.
 
 ### 3.2 Quit
-- Only the **Quit ShyCloud menu item** may ask. If iCloud is currently paused, it calls `NSApp.activate()` then shows an `NSAlert`: title "Keep iCloud paused after quitting?", info "iCloud resumes automatically when you restart or log out.", buttons **Resume iCloud** (default, Return) and **Keep Paused**.
+- Only the **Quit ShyCloud menu item** may ask. If iCloud is currently paused, it calls `NSApp.activate()` then shows an `NSAlert`: title "Keep iCloud paused after quitting?", info "iCloud resumes automatically when you restart or log out.", buttons **Resume iCloud** (default, Return), **Keep Paused** and **Cancel** (Escape; does nothing, the app keeps running with no state change).
 - If iCloud is syncing, Quit exits immediately.
 - Every other termination path (logout, shutdown, restart, Sparkle relaunch, `SIGTERM`) resumes all targets without asking (`applicationWillTerminate` + `NSWorkspace.willPowerOffNotification`).
 - "Keep Paused" writes the keep-paused flag (§5) and exits without resuming.
 
 ### 3.3 Settings (single small window)
-Implemented as an AppKit `NSWindow` hosting the SwiftUI `SettingsView` (`SettingsWindowController.shared.show()`), so it can be opened from the menu and from `applicationShouldHandleReopen` alike; always call `NSApp.activate()` first so it comes to front for an accessory app.
+Implemented as an AppKit `NSWindow` hosting the SwiftUI `SettingsView` (`SettingsWindowController.shared.show()`), so it can be opened from the menu and from `applicationShouldHandleReopen` alike; `show()` deminiaturizes if needed, activates the app forcefully (`NSRunningApplication.current.activate(options: [.activateAllWindows])`), then `makeKeyAndOrderFront` + `orderFrontRegardless` so an already-open window comes to front for an accessory app.
 
 Contents:
-- **Sync window:** Start time, End time (`DatePicker` with `.hourAndMinute`). Inline error when equal.
-- **What to pause:**
-  - ☑ iCloud Drive — always on, disabled checkbox
-  - ☐ Photo analysis
-  - ☐ CloudKit — under "Advanced", warning: "Also pauses Messages, Notes, Reminders and other apps that sync with iCloud. Those apps may freeze until sync resumes."
+- **Sync window:** Start time, End time (`DatePicker` with `.hourAndMinute`). Inline error (section footer) when equal.
+- **Pause outside sync hours** (one section; ON means paused). Each explanation is a subtitle inside its toggle's row (second `Text` in the `Toggle` label), never a separate row:
+  - ☑ Pause iCloud Drive — always on, disabled. Subtitle: "Always paused — this is what ShyCloud is for."
+  - ☐ Pause photo analysis. Subtitle: "Low risk. Photos still opens normally."
+  - ☐ Pause CloudKit. Subtitle: "Also pauses Messages, Notes, Reminders and other apps that sync with iCloud. They may freeze until sync resumes."
   - Link: "Pause iCloud Photos in the Photos app…" (opens Photos)
+  - Section footer: "While paused, files stored only in iCloud (cloud icon in Finder) can't open until sync runs."
 - **General:**
-  - Open at login (`SMAppService.mainApp`; if `.requiresApproval` show "Needs approval" + button → `SMAppService.openSystemSettingsLoginItems()`)
-  - Show in menu bar (when off: "Open ShyCloud again from Applications to return here.")
+  - Open at login (`SMAppService.mainApp`; if `.requiresApproval` the toggle subtitle reads "Needs approval in System Settings." and a button → `SMAppService.openSystemSettingsLoginItems()`)
+  - Show in menu bar (when off, subtitle: "Open ShyCloud again from Applications to return here.")
   - Automatically check for updates (Sparkle `automaticallyChecksForUpdates`) + "Check for Updates…" button
 - **Safety helper status:** "Safety helper: On" or, if the watchdog agent status ≠ `.enabled`, a warning "Safety helper is disabled in System Settings › General › Login Items & Extensions. ShyCloud won't pause iCloud until it is enabled." + button.
-- Footer: "While paused, files stored only in iCloud (cloud icon in Finder) can't open until sync runs."
+- No "Acknowledgements" button in Settings; third-party licenses live in About (§3.4).
 
 ### 3.4 About
-`NSApp.orderFrontStandardAboutPanel` with credits: "Not affiliated with Apple. iCloud is a trademark of Apple Inc.", GitHub link, "GPL-3.0". Call `NSApp.activate()` first.
+`NSApp.orderFrontStandardAboutPanel` with credits: GitHub link, "GPL-3.0-or-later", a clickable "Third-Party Licenses" link (file URL of the bundled `THIRD_PARTY_NOTICES.txt`) and "Includes Sparkle (MIT license).". No Apple trademark line inside the app. Call `NSApp.activate()` first.
 
 ### 3.5 First launch
 No onboarding. Defaults: mode `scheduled`, window 02:00–09:00, open-at-login registered, watchdog registered, menu icon shown. Note: 02:00 does not exist on spring-forward days in some time zones; schedule math handles it (§4).
@@ -117,7 +118,7 @@ Single app target + one embedded LaunchAgent helper (both arm64). Units, each wi
 - Xcode 27, Swift 6 language mode, strict concurrency complete, SwiftUI, `LSUIElement = YES`.
 - `ARCHS = arm64`, `MACOSX_DEPLOYMENT_TARGET = 26.0`.
 - App Sandbox off (required to signal other processes). Hardened Runtime on.
-- Only dependency: Sparkle 2 (SPM). Ship its license notice in About/Acknowledgements.
+- Only dependency: Sparkle 2 (SPM). Ship its license notice via the About "Third-Party Licenses" link.
 - Bundle ids: `com.ekremus.ShyCloud`, `com.ekremus.ShyCloud.Watchdog`.
 
 ## 7. Testing

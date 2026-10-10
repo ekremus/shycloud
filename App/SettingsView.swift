@@ -17,61 +17,66 @@ struct SettingsView: View {
     var body: some View {
         @Bindable var settings = environment.settings
         Form {
-            Section(String(localized: "Sync window")) {
+            Section {
                 DatePicker(String(localized: "Start"), selection: timeBinding(.start), displayedComponents: .hourAndMinute)
                 DatePicker(String(localized: "End"), selection: timeBinding(.end), displayedComponents: .hourAndMinute)
+            } header: {
+                Text("Sync window")
+            } footer: {
                 if scheduleError {
                     Text("Start and end can't be the same time.")
-                        .font(.caption)
                         .foregroundStyle(.red)
                 }
             }
 
-            Section(String(localized: "What to pause")) {
-                Toggle(String(localized: "iCloud Drive"), isOn: .constant(true))
-                    .disabled(true)
-                Toggle(String(localized: "Photo analysis"), isOn: $settings.pausePhotoAnalysis)
+            Section {
+                Toggle(isOn: .constant(true)) {
+                    Text("Pause iCloud Drive")
+                    Text("Always paused — this is what ShyCloud is for.")
+                }
+                .disabled(true)
+                Toggle(isOn: $settings.pausePhotoAnalysis) {
+                    Text("Pause photo analysis")
+                    Text("Low risk. Photos still opens normally.")
+                }
+                Toggle(isOn: $settings.pauseCloudKit) {
+                    Text("Pause CloudKit")
+                    Text("Also pauses Messages, Notes, Reminders and other apps that sync with iCloud. They may freeze until sync resumes.")
+                }
                 Button(String(localized: "Pause iCloud Photos in the Photos app…")) {
                     NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Photos.app"))
                 }
                 .buttonStyle(.link)
-            }
-
-            Section(String(localized: "Advanced")) {
-                Toggle(String(localized: "CloudKit"), isOn: $settings.pauseCloudKit)
-                Text("Also pauses Messages, Notes, Reminders and other apps that sync with iCloud. Those apps may freeze until sync resumes.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            } header: {
+                Text("Pause outside sync hours")
+            } footer: {
+                Text("While paused, files stored only in iCloud (cloud icon in Finder) can't open until sync runs.")
             }
 
             Section(String(localized: "General")) {
-                Toggle(String(localized: "Open at login"), isOn: Binding(
+                Toggle(isOn: Binding(
                     get: { loginOn },
                     set: { environment.loginItem.set($0); refresh() }
-                ))
-                if loginNeedsApproval {
-                    HStack {
+                )) {
+                    Text("Open at login")
+                    if loginNeedsApproval {
                         Text("Needs approval in System Settings.")
-                        Button(String(localized: "Open System Settings…")) { SMAppService.openSystemSettingsLoginItems() }
                     }
-                    .font(.caption)
                 }
-                Toggle(String(localized: "Show in menu bar"), isOn: $settings.showInMenuBar)
-                if !settings.showInMenuBar {
-                    Text("Open ShyCloud again from Applications to return here.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                if loginNeedsApproval {
+                    Button(String(localized: "Open System Settings…")) { SMAppService.openSystemSettingsLoginItems() }
+                }
+                Toggle(isOn: $settings.showInMenuBar) {
+                    Text("Show in menu bar")
+                    if !settings.showInMenuBar {
+                        Text("Open ShyCloud again from Applications to return here.")
+                    }
                 }
                 Toggle(String(localized: "Automatically check for updates"), isOn: Binding(
                     get: { autoUpdate },
                     set: { environment.updater.automaticallyChecks = $0; autoUpdate = $0 }
                 ))
                 Button(String(localized: "Check for Updates…")) { environment.updater.checkForUpdates() }
-                Button(String(localized: "Acknowledgements…")) {
-                    if let url = Bundle.main.url(forResource: "THIRD_PARTY_NOTICES", withExtension: "txt") {
-                        NSWorkspace.shared.open(url)
-                    }
-                }
             }
 
             Section(String(localized: "Safety helper")) {
@@ -87,10 +92,6 @@ struct SettingsView: View {
                     Button(String(localized: "Open System Settings…")) { environment.safetyHelper.openSystemSettings() }
                 }
             }
-
-            Text("While paused, files stored only in iCloud (cloud icon in Finder) can't open until sync runs.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
 
             // The only way to quit when the menu bar icon is hidden.
             Button(String(localized: "Quit ShyCloud")) { QuitFlow.run() }
