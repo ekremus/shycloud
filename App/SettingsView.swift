@@ -92,9 +92,6 @@ struct SettingsView: View {
                     Button(String(localized: "Open System Settings…")) { environment.safetyHelper.openSystemSettings() }
                 }
             }
-
-            // The only way to quit when the menu bar icon is hidden.
-            Button(String(localized: "Quit ShyCloud")) { QuitFlow.run() }
         }
         .formStyle(.grouped)
         .frame(width: 440)
