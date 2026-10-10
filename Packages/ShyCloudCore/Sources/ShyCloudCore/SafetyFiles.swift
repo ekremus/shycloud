@@ -22,7 +22,8 @@ public struct SafetyFiles: Sendable {
 
     public func readHeartbeat() -> Date? {
         guard let data = try? Data(contentsOf: heartbeatURL),
-              let seconds = Double(String(decoding: data, as: UTF8.self))
+              let seconds = Double(String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)),
+              seconds.isFinite
         else { return nil }
         return Date(timeIntervalSince1970: seconds)
     }

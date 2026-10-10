@@ -7,22 +7,36 @@ struct SafetyTests {
         SafetyFiles(directory: FileManager.default.temporaryDirectory.appending(path: "shycloud-tests-\(UUID().uuidString)"))
     }
 
-    @Test func heartbeatRoundTrip() throws {
+    /// Runs `body` with a fresh SafetyFiles and removes its directory afterwards.
+    func withTempFiles<T>(_ body: (SafetyFiles) throws -> T) rethrows -> T {
         let files = tempFiles()
+        defer { try? FileManager.default.removeItem(at: files.directory) }
+        return try body(files)
+    }
+
+    func writeRaw(_ text: String, to url: URL, in files: SafetyFiles) throws {
+        try FileManager.default.createDirectory(at: files.directory, withIntermediateDirectories: true)
+        try Data(text.utf8).write(to: url)
+    }
+
+    @Test func heartbeatRoundTrip() throws {
+        try withTempFiles { files in
         #expect(files.readHeartbeat() == nil)
         let date = Date(timeIntervalSince1970: 1_800_000_000.5)
         try files.writeHeartbeat(date)
         #expect(files.readHeartbeat() == date)
+        }
     }
 
     @Test func keepPausedRoundTripAndDelete() throws {
-        let files = tempFiles()
+        try withTempFiles { files in
         let ids = [ProcessIdentity(pid: 42, startTime: 7)]
         try files.writeKeepPaused(ids)
         #expect(files.readKeepPaused() == ids)
         files.deleteKeepPaused()
         #expect(files.readKeepPaused() == nil)
         files.deleteKeepPaused() // deleting twice is fine
+        }
     }
 
     let now = Date(timeIntervalSince1970: 2_000_000_000)
@@ -45,5 +59,60 @@ struct SafetyTests {
     @Test func staleKeepPausedRecordResumes() {
         #expect(WatchdogDecision.decide(heartbeat: nil, now: now, keepPaused: paused, isAliveAndStopped: { _ in false }) == .resume)
         #expect(WatchdogDecision.decide(heartbeat: nil, now: now, keepPaused: [], isAliveAndStopped: { _ in true }) == .resume)
+    }
+
+    // MARK: fail-safe (corrupt or doubtful input must lead to resume)
+
+    @Test func garbageHeartbeatIsNil() throws {
+        try withTempFiles { files in
+            try writeRaw("not a number", to: files.heartbeatURL, in: files)
+            #expect(files.readHeartbeat() == nil)
+        }
+    }
+
+    @Test func nonFiniteHeartbeatIsNil() throws {
+        try withTempFiles { files in
+            for text in ["inf", "-inf", "nan", "infinity"] {
+                try writeRaw(text, to: files.heartbeatURL, in: files)
+                #expect(files.readHeartbeat() == nil, "\(text)")
+            }
+        }
+    }
+
+    @Test func heartbeatWithTrailingNewlineParses() throws {
+        try withTempFiles { files in
+            try writeRaw("1800000000.5\n", to: files.heartbeatURL, in: files)
+            #expect(files.readHeartbeat() == Date(timeIntervalSince1970: 1_800_000_000.5))
+        }
+    }
+
+    @Test func futureHeartbeatResumes() {
+        #expect(WatchdogDecision.decide(heartbeat: now.addingTimeInterval(3600), now: now, keepPaused: nil, isAliveAndStopped: { _ in false }) == .resume)
+    }
+
+    @Test func slightlyFutureHeartbeatExits() {
+        #expect(WatchdogDecision.decide(heartbeat: now.addingTimeInterval(30), now: now, keepPaused: nil, isAliveAndStopped: { _ in false }) == .exit)
+    }
+
+    @Test func corruptKeepPausedFailsSafeToResume() throws {
+        try withTempFiles { files in
+            for text in ["garbage", "[{\"pid\":42,", "{\"pid\":42}", "[1,2,3]"] {
+                try writeRaw(text, to: files.keepPausedURL, in: files)
+                let read = files.readKeepPaused()
+                #expect(read == nil, "\(text)")
+                #expect(WatchdogDecision.decide(heartbeat: nil, now: now, keepPaused: read, isAliveAndStopped: { _ in true }) == .resume, "\(text)")
+            }
+        }
+    }
+
+    @Test func mixedLivenessResumes() {
+        let ids = [ProcessIdentity(pid: 42, startTime: 7), ProcessIdentity(pid: 43, startTime: 8)]
+        #expect(WatchdogDecision.decide(heartbeat: nil, now: now, keepPaused: ids, isAliveAndStopped: { $0.pid == 42 }) == .resume)
+    }
+
+    @Test func missingDirectoryReadsNil() {
+        let files = tempFiles()
+        #expect(files.readHeartbeat() == nil)
+        #expect(files.readKeepPaused() == nil)
     }
 }
