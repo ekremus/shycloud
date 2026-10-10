@@ -9,7 +9,7 @@
 - ▶️ **Sync On** — normal iCloud, one click
 - 🛟 **Safety first** — iCloud resumes on quit (unless you choose Keep Paused), sleep, logout and crashes (built-in safety helper)
 - 🫥 **Hideable** — remove the menu bar icon; it keeps working in the background
-- 🍎 Apple Silicon · macOS 26+ · English & Türkçe · no tracking, no account
+- 🍎 Apple Silicon · macOS 26+ · English · no tracking, no account
 
 <!-- ![ShyCloud menu](docs/images/menu.png) -->
 

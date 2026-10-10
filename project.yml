@@ -61,7 +61,7 @@ targets:
         CFBundleDisplayName: ShyCloud
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
-        CFBundleLocalizations: [en, tr]
+        CFBundleLocalizations: [en]
         LSUIElement: true
         LSApplicationCategoryType: public.app-category.utilities
         LSMinimumSystemVersion: "26.0"

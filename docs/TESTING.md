@@ -30,7 +30,6 @@ Useful commands:
 | 16 | Hidden icon | Settings › untick Show in menu bar → close → open app from /Applications | Settings window appears |
 | 17 | Logout | Sync Off → log out → log in | `bird` running fresh; ShyCloud relaunches and pauses again |
 | 18 | Cloud-only file | Sync Off → open a Finder file with cloud icon | App waits; choosing Sync On lets it open |
-| 19 | Turkish | System Settings › Language → Türkçe (or `defaults write com.ekremus.ShyCloud AppleLanguages '(tr)'`), relaunch | All menu/settings text Turkish |
 | 20 | Update check | Settings › Check for Updates… | Sparkle dialog appears (feed may 404 before first release) |
 | 21 | Watchdog dry run | Quit ShyCloud (Resume), run `/Applications/ShyCloud.app/Contents/MacOS/ShyCloudWatchdog; echo $?` | `0`; `bird` state `S`/`R`, never `T` |
 | 22 | SIGTERM | Sync Off → `kill -TERM <ShyCloud pid>` | App quits and `bird` is `S`/`R` immediately (no 3-minute wait) |

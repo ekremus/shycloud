@@ -15,7 +15,7 @@ A free, open-source macOS menu bar app that keeps iCloud Drive sync paused while
 - License: **GPL-3.0-or-later**. Anyone may use, modify and redistribute it free of charge; any redistributed version (including a modified or sold one) must ship its full source under the same license, so nobody can turn it into a closed product.
 - Contributions: inbound contributions are accepted under the MIT license (stated in CONTRIBUTING.md and the PR template), which lets the owner relicense the whole codebase later if ever needed. (An App Store build is blocked anyway by the sandbox — see §9.)
 - Platform: **Apple Silicon only (arm64), macOS 26+**.
-- Languages: English (base) + Turkish, via String Catalog (`Localizable.xcstrings`).
+- Languages: English (UI). README also in Turkish.
 - No notifications. No analytics. No network access except Sparkle update checks.
 
 ## 2. Modes
