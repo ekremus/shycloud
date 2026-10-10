@@ -19,7 +19,7 @@ Useful commands:
 | 5 | Simulator safety | Boot any iOS Simulator, choose Sync Off with CloudKit ticked | Only `/System/Library/...cloudd` is `T`; Simulator `cloudd` stays `S` |
 | 6 | Optional targets | Tick Photo analysis, untick again | `photoanalysisd` `T`, then `S` immediately |
 | 7 | Respawn | While paused: `kill -9 <bird pid>` | New `bird` pid appears and is `T` within a few seconds |
-| 8 | Sleep/wake | Sync Off → sleep 1 min → wake X
+| 8 | Sleep/wake | Sync Off → sleep 1 min → wake | During sleep targets resumed; after wake the status may show "Starting safety helper…" for up to ~90 s (launchd skips the watchdog's runs during sleep), then pauses again |
 | 9 | Catch-up | `defaults write com.ekremus.ShyCloud lastSyncedAt -date "2026-01-01 00:00:00 +0000"`, relaunch outside window | Status "Catching up · pauses at …" for 30 min |
 | 10 | Quit, resume | Sync Off → Quit → Resume iCloud | `bird` `S`; no `keep-paused.json` |
 | 11 | Quit, keep paused | Sync Off → Quit → Keep Paused, wait 3 min | `bird` stays `T`; `keep-paused.json` exists; watchdog does not resume |
