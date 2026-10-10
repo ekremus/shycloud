@@ -14,7 +14,8 @@ enum StatusText {
 
     static func line(_ status: SyncStatus) -> String {
         switch status {
-        case .syncing(nil):
+        case .syncing(nil), .waitingForHelper:
+            // The safety helper is invisible in the UI: while it starts, iCloud is syncing.
             String(localized: "ShyCloud — Syncing")
         case .syncing(let until?):
             String(localized: "ShyCloud — Syncing · pauses at \(time(until))")
@@ -23,9 +24,7 @@ enum StatusText {
         case .paused(let until?):
             String(localized: "ShyCloud — Paused · syncs at \(time(until))")
         case .helperDisabled:
-            String(localized: "Safety helper disabled — not pausing")
-        case .waitingForHelper:
-            String(localized: "ShyCloud — Starting safety helper…")
+            String(localized: "ShyCloud — Can't pause: allow ShyCloud in Login Items")
         }
     }
 

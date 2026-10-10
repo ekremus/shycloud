@@ -11,7 +11,6 @@ struct SettingsView: View {
     @State private var scheduleError = false
     @State private var loginOn = false
     @State private var loginNeedsApproval = false
-    @State private var helperState: SafetyHelperState = .working
     @State private var autoUpdate = true
 
     var body: some View {
@@ -30,9 +29,10 @@ struct SettingsView: View {
             }
 
             Section {
-                Toggle(isOn: .constant(true)) {
+                // Read-only: mirrors the live state (ON while iCloud Drive is paused right now).
+                Toggle(isOn: .constant(environment.sync.isPausedNow)) {
                     Text("Pause iCloud Drive")
-                    Text("Always paused — this is what ShyCloud is for.")
+                    Text("Paused outside sync hours. Shows whether it's paused right now.")
                 }
                 .disabled(true)
                 Toggle(isOn: $settings.pausePhotoAnalysis) {
@@ -78,25 +78,11 @@ struct SettingsView: View {
                 ))
                 Button(String(localized: "Check for Updates…")) { environment.updater.checkForUpdates() }
             }
-
-            Section(String(localized: "Safety helper")) {
-                switch helperState {
-                case .working:
-                    Label(String(localized: "On — resumes iCloud if ShyCloud ever stops unexpectedly."), systemImage: "checkmark.shield")
-                case .starting:
-                    Text("Starting safety helper…")
-                        .foregroundStyle(.secondary)
-                case .disabled:
-                    Text("Safety helper is disabled in System Settings › General › Login Items & Extensions. ShyCloud won't pause iCloud until it is enabled.")
-                        .foregroundStyle(.orange)
-                    Button(String(localized: "Open System Settings…")) { environment.safetyHelper.openSystemSettings() }
-                }
-            }
         }
         .formStyle(.grouped)
         // Fixed size: letting a grouped Form size the window (fixedSize + preferredContentSize)
         // causes an endless update-constraints loop that crashes AppKit. The Form scrolls if needed.
-        .frame(width: 440, height: 620)
+        .frame(width: 440, height: 560)
         .onAppear(perform: refresh)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refresh() }
     }
@@ -104,7 +90,6 @@ struct SettingsView: View {
     private func refresh() {
         loginOn = environment.loginItem.isOn
         loginNeedsApproval = environment.loginItem.status == .requiresApproval
-        helperState = environment.helperState
         autoUpdate = environment.updater.automaticallyChecks
         environment.sync.apply()
     }

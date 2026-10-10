@@ -33,8 +33,4 @@ final class SafetyHelper {
             log.error("Watchdog registration failed: \(error.localizedDescription, privacy: .public)")
         }
     }
-
-    func openSystemSettings() {
-        SMAppService.openSystemSettingsLoginItems()
-    }
 }

@@ -49,7 +49,7 @@ Last synced: today 08:59                  (disabled)
   Quit ShyCloud    ⌘Q
 ```
 
-Status line variants: `Syncing`, `Syncing · pauses at 09:00`, `Paused`, `Paused · syncs at 02:00`, `Safety helper disabled — not pausing`.
+Status line variants: `Syncing`, `Syncing · pauses at 09:00`, `Paused`, `Paused · syncs at 02:00`, `Can't pause: allow ShyCloud in Login Items` (watchdog agent disabled). The safety helper is invisible in the UI: while it is still starting, the line reads `Syncing` like any other syncing state.
 Icon (SF Symbols, template rendering): running → `icloud`; paused → `icloud.slash`.
 
 ### 3.2 Quit
@@ -64,7 +64,7 @@ Implemented as an AppKit `NSWindow` hosting the SwiftUI `SettingsView` (`Setting
 Contents:
 - **Sync window:** Start time, End time (`DatePicker` with `.hourAndMinute`). Inline error (section footer) when equal.
 - **Pause outside sync hours** (one section; ON means paused). Each explanation is a subtitle inside its toggle's row (second `Text` in the `Toggle` label), never a separate row:
-  - ☑ Pause iCloud Drive — always on, disabled. Subtitle: "Always paused — this is what ShyCloud is for."
+  - Pause iCloud Drive — disabled (not user-editable); its value mirrors the live state: ON while iCloud Drive is paused right now (`sync.isPausedNow`), OFF while syncing. Subtitle: "Paused outside sync hours. Shows whether it's paused right now."
   - ☐ Pause photo analysis. Subtitle: "Low risk. Photos still opens normally."
   - ☐ Pause CloudKit. Subtitle: "Also pauses Messages, Notes, Reminders and other apps that sync with iCloud. They may freeze until sync resumes."
   - Link: "Pause iCloud Photos in the Photos app…" (opens Photos)
@@ -73,11 +73,12 @@ Contents:
   - Open at login (`SMAppService.mainApp`; if `.requiresApproval` the toggle subtitle reads "Needs approval in System Settings." and a button → `SMAppService.openSystemSettingsLoginItems()`)
   - Show in menu bar (when off, subtitle: "Open ShyCloud again from Applications to return here.")
   - Automatically check for updates (Sparkle `automaticallyChecksForUpdates`) + "Check for Updates…" button
-- **Safety helper status:** "Safety helper: On" or, if the watchdog agent status ≠ `.enabled`, a warning "Safety helper is disabled in System Settings › General › Login Items & Extensions. ShyCloud won't pause iCloud until it is enabled." + button.
+- No safety helper section: the helper is invisible in the UI (it is still registered and still gates pausing, §4). If it is disabled, only the menu status line says so (§3.1).
+- The window has a fixed size (`.frame(width:height:)` on the Form); the grouped Form scrolls if needed. Never let SwiftUI content and the window size each other.
 - No "Acknowledgements" button in Settings; third-party licenses live in About (§3.4).
 
 ### 3.4 About
-`NSApp.orderFrontStandardAboutPanel` with credits: GitHub link, "GPL-3.0-or-later", a clickable "Third-Party Licenses" link (file URL of the bundled `THIRD_PARTY_NOTICES.txt`) and "Includes Sparkle (MIT license).". No Apple trademark line inside the app. Call `NSApp.activate()` first.
+Custom SwiftUI `AboutView` in one reusable `NSWindow` (`AboutWindowController.shared.show()`, brought to front like Settings, §3.3). Fixed size 300×360, `.titled, .closable, .fullSizeContentView`, transparent titlebar with hidden title, movable by background, closes with ⌘W or Esc, default window background (light/dark automatic). Centered content: app icon (96 pt), "ShyCloud", "Version X (build Y)" (selectable), "Pause iCloud Drive sync on a schedule.", link buttons "GitHub" (repository) and "Third-Party Licenses" (file URL of the bundled `THIRD_PARTY_NOTICES.txt`, which includes Sparkle's MIT notice), footnote "Free and open source · GPL-3.0". No Apple trademark line inside the app.
 
 ### 3.5 First launch
 No onboarding. Defaults: mode `scheduled`, window 02:00–09:00, open-at-login registered, watchdog registered, menu icon shown. Note: 02:00 does not exist on spring-forward days in some time zones; schedule math handles it (§4).

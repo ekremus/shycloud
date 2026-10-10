@@ -21,7 +21,7 @@ struct MenuContent: View {
         Divider()
         Button(String(localized: "Settings…")) { SettingsWindowController.shared.show() }
             .keyboardShortcut(",")
-        Button(String(localized: "About ShyCloud")) { AboutPanel.show() }
+        Button(String(localized: "About ShyCloud")) { AboutWindowController.shared.show() }
         Button(String(localized: "Quit ShyCloud")) { QuitFlow.run() }
             .keyboardShortcut("q")
     }
