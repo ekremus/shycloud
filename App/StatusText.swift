@@ -28,6 +28,34 @@ enum StatusText {
         }
     }
 
+    /// Settings header title: the live iCloud Drive state.
+    static func settingsHeadline(_ status: SyncStatus) -> String {
+        switch status {
+        case .paused:
+            String(localized: "iCloud Drive is paused")
+        case .syncing, .waitingForHelper:
+            String(localized: "iCloud Drive is syncing")
+        case .helperDisabled:
+            String(localized: "iCloud Drive can't be paused")
+        }
+    }
+
+    /// Settings header subtitle: when the current state ends, or what to do.
+    static func settingsDetail(_ status: SyncStatus) -> String {
+        switch status {
+        case .paused(let until?):
+            String(localized: "Syncs at \(time(until))")
+        case .paused(nil):
+            String(localized: "Until you choose Sync On or Scheduled")
+        case .syncing(let until?):
+            String(localized: "Pauses at \(time(until))")
+        case .syncing(nil), .waitingForHelper:
+            String(localized: "Sync is on")
+        case .helperDisabled:
+            String(localized: "Allow ShyCloud in System Settings › Login Items")
+        }
+    }
+
     /// "Today 08:59", "Yesterday 02:30", or a medium date for older syncs.
     private static let lastSyncedFormatter: DateFormatter = {
         let formatter = DateFormatter()

@@ -17,40 +17,41 @@ struct SettingsView: View {
         @Bindable var settings = environment.settings
         Form {
             Section {
+                StatusHeader(status: environment.sync.status)
+            }
+
+            Section {
                 DatePicker(String(localized: "Start"), selection: timeBinding(.start), displayedComponents: .hourAndMinute)
                 DatePicker(String(localized: "End"), selection: timeBinding(.end), displayedComponents: .hourAndMinute)
             } header: {
-                Text("Sync window")
+                Text("Sync hours")
             } footer: {
-                if scheduleError {
-                    Text("Start and end can't be the same time.")
-                        .foregroundStyle(.red)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("iCloud Drive syncs only during these hours and stays paused the rest of the day.")
+                    if scheduleError {
+                        Text("Start and end can't be the same time.")
+                            .foregroundStyle(.red)
+                    }
                 }
             }
 
             Section {
-                // Read-only: mirrors the live state (ON while iCloud Drive is paused right now).
-                Toggle(isOn: .constant(environment.sync.isPausedNow)) {
-                    Text("Pause iCloud Drive")
-                    Text("Paused outside sync hours. Shows whether it's paused right now.")
-                }
-                .disabled(true)
                 Toggle(isOn: $settings.pausePhotoAnalysis) {
-                    Text("Pause photo analysis")
+                    Text("Photo analysis")
                     Text("Low risk. Photos still opens normally.")
                 }
                 Toggle(isOn: $settings.pauseCloudKit) {
-                    Text("Pause CloudKit")
-                    Text("Also pauses Messages, Notes, Reminders and other apps that sync with iCloud. They may freeze until sync resumes.")
+                    Text("CloudKit")
+                    Text("Also pauses Messages, Notes, Reminders and other iCloud apps. They may freeze until sync resumes.")
                 }
                 Button(String(localized: "Pause iCloud Photos in the Photos app…")) {
                     NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Photos.app"))
                 }
                 .buttonStyle(.link)
             } header: {
-                Text("Pause outside sync hours")
+                Text("Also pause")
             } footer: {
-                Text("While paused, files stored only in iCloud (cloud icon in Finder) can't open until sync runs.")
+                Text("While paused, files stored only in iCloud (cloud icon in Finder) open after sync resumes.")
             }
 
             Section(String(localized: "General")) {
@@ -82,7 +83,7 @@ struct SettingsView: View {
         .formStyle(.grouped)
         // Fixed size: letting a grouped Form size the window (fixedSize + preferredContentSize)
         // causes an endless update-constraints loop that crashes AppKit. The Form scrolls if needed.
-        .frame(width: 440, height: 560)
+        .frame(width: 440, height: 600)
         .onAppear(perform: refresh)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refresh() }
     }
@@ -111,5 +112,29 @@ struct SettingsView: View {
                 scheduleError = !environment.settings.setSchedule(proposed)
             }
         )
+    }
+}
+
+/// Live iCloud Drive state at the top of Settings (read-only; the schedule decides it).
+private struct StatusHeader: View {
+    let status: SyncStatus
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: status.isPaused ? "icloud.slash" : "icloud")
+                .font(.system(size: 28))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(status.isPaused ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.accentColor))
+                .frame(width: 40)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(StatusText.settingsHeadline(status))
+                    .font(.headline)
+                Text(StatusText.settingsDetail(status))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
     }
 }

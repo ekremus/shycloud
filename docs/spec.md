@@ -61,20 +61,25 @@ Icon (SF Symbols, template rendering): running → `icloud`; paused → `icloud.
 ### 3.3 Settings (single small window)
 Implemented as an AppKit `NSWindow` hosting the SwiftUI `SettingsView` (`SettingsWindowController.shared.show()`), so it can be opened from the menu and from `applicationShouldHandleReopen` alike; `show()` deminiaturizes if needed, activates the app forcefully (`NSRunningApplication.current.activate(options: [.activateAllWindows])`), then `makeKeyAndOrderFront` + `orderFrontRegardless` so an already-open window comes to front for an accessory app.
 
-Contents:
-- **Sync window:** Start time, End time (`DatePicker` with `.hourAndMinute`). Inline error (section footer) when equal.
-- **Pause outside sync hours** (one section; ON means paused). Each explanation is a subtitle inside its toggle's row (second `Text` in the `Toggle` label), never a separate row:
-  - Pause iCloud Drive — disabled (not user-editable); its value mirrors the live state: ON while iCloud Drive is paused right now (`sync.isPausedNow`), OFF while syncing. Subtitle: "Paused outside sync hours. Shows whether it's paused right now."
-  - ☐ Pause photo analysis. Subtitle: "Low risk. Photos still opens normally."
-  - ☐ Pause CloudKit. Subtitle: "Also pauses Messages, Notes, Reminders and other apps that sync with iCloud. They may freeze until sync resumes."
+Contents (grouped `Form`, four sections, no toggle for iCloud Drive: it is not a user choice, the schedule decides it):
+- **Status header** (first section, no title; read-only, updates live from `sync.status`, which is `@Observable`): an `HStack` with SF Symbol `icloud` (syncing, tinted accent color) or `icloud.slash` (paused, tinted `.secondary`) at ~28 pt with `.symbolRenderingMode(.hierarchical)`, next to a headline and a secondary subtitle; the row is one accessibility element (`.accessibilityElement(children: .combine)`). Strings come from `StatusText.settingsHeadline(_:)` / `settingsDetail(_:)`:
+  - `paused(until: d)`: "iCloud Drive is paused" / "Syncs at <time>"
+  - `paused(nil)`: "iCloud Drive is paused" / "Until you choose Sync On or Scheduled"
+  - `syncing(until: d)`: "iCloud Drive is syncing" / "Pauses at <time>"
+  - `syncing(nil)`, `waitingForHelper`: "iCloud Drive is syncing" / "Sync is on"
+  - `helperDisabled`: "iCloud Drive can't be paused" / "Allow ShyCloud in System Settings › Login Items"
+- **Sync hours:** Start time, End time (`DatePicker` with `.hourAndMinute`). Footer: "iCloud Drive syncs only during these hours and stays paused the rest of the day." plus the inline error "Start and end can't be the same time." when equal.
+- **Also pause** (ON means it is paused along with iCloud Drive outside sync hours). Each explanation is a subtitle inside its toggle's row (second `Text` in the `Toggle` label), never a separate row; toggles are labelled by the thing, not "Pause X":
+  - ☐ Photo analysis. Subtitle: "Low risk. Photos still opens normally."
+  - ☐ CloudKit. Subtitle: "Also pauses Messages, Notes, Reminders and other iCloud apps. They may freeze until sync resumes."
   - Link: "Pause iCloud Photos in the Photos app…" (opens Photos)
-  - Section footer: "While paused, files stored only in iCloud (cloud icon in Finder) can't open until sync runs."
+  - Section footer: "While paused, files stored only in iCloud (cloud icon in Finder) open after sync resumes."
 - **General:**
   - Open at login (`SMAppService.mainApp`; if `.requiresApproval` the toggle subtitle reads "Needs approval in System Settings." and a button → `SMAppService.openSystemSettingsLoginItems()`)
   - Show in menu bar (when off, subtitle: "Open ShyCloud again from Applications to return here.")
   - Automatically check for updates (Sparkle `automaticallyChecksForUpdates`) + "Check for Updates…" button
 - No safety helper section: the helper is invisible in the UI (it is still registered and still gates pausing, §4). If it is disabled, only the menu status line says so (§3.1).
-- The window has a fixed size (`.frame(width:height:)` on the Form); the grouped Form scrolls if needed. Never let SwiftUI content and the window size each other.
+- The window has a fixed size (`.frame(width: 440, height: …)` on the Form, sized so the content normally fits without scrolling); the grouped Form scrolls if needed. Never let SwiftUI content and the window size each other.
 - No "Acknowledgements" button in Settings; third-party licenses live in About (§3.4).
 
 ### 3.4 About
