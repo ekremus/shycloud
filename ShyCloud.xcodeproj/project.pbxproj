@@ -12,6 +12,7 @@
 		557851C12276ED731FAC6B7C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C5520F252E10DBCE53578406 /* Assets.xcassets */; };
 		558E18728C43B965626DB317 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED73CEEC237AD29F0A23D6C9 /* SettingsWindowController.swift */; };
 		5894CD379957475153DF964E /* StatusText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F3B13EC003CD786D207EC22 /* StatusText.swift */; };
+		5DC358CDD95FD83E41404D31 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = B2D4FE45FE7441B564BB9E57 /* LICENSE */; };
 		5F0421FE19D1E8FA0EB32937 /* ShyCloudCore in Frameworks */ = {isa = PBXBuildFile; productRef = D9C486758FEB7086EA5AEF79 /* ShyCloudCore */; };
 		688756D9BD907402C511FD6B /* SafetyHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = B129DA590AFD1AF909E9D0F4 /* SafetyHelper.swift */; };
 		68BF819B5DA9881CE2FCFE82 /* ShyCloudApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A462CFE8CA75A37143B24213 /* ShyCloudApp.swift */; };
@@ -21,6 +22,7 @@
 		7313E2FA075EAB29D0228EDF /* ShyCloudCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2CDAEC4E45C3492F3A1C1FC0 /* ShyCloudCore */; };
 		7C65BA8075F89BE2A78EEEC4 /* LoginItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6D768649C79D3102FC27611 /* LoginItem.swift */; };
 		87FB07480D094966BCE3B41A /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = C68546D975F6D2B3F64C83B7 /* AppEnvironment.swift */; };
+		8AD3B6ABEABC50C830723961 /* THIRD_PARTY_NOTICES.md in Resources */ = {isa = PBXBuildFile; fileRef = 2A70B462F657685975DB011E /* THIRD_PARTY_NOTICES.md */; };
 		9A84F03EA3A764C53DC99FE3 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A18737AE1935B023AAC2202 /* Updater.swift */; };
 		B9D883C97D20B18BA5C41694 /* QuitFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AC2BD382578FD066D7C032E /* QuitFlow.swift */; };
 		BAFA0D0BD690E0E1D62B9BBA /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 573B4F8412F665309A514263 /* Sparkle */; };
@@ -67,6 +69,7 @@
 /* Begin PBXFileReference section */
 		0A18737AE1935B023AAC2202 /* Updater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
 		1A2FEF68160A38F52EDF0D52 /* AboutPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutPanel.swift; sourceTree = "<group>"; };
+		2A70B462F657685975DB011E /* THIRD_PARTY_NOTICES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = THIRD_PARTY_NOTICES.md; sourceTree = "<group>"; };
 		34AB5E2364557E6E396E0C88 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		4AC2BD382578FD066D7C032E /* QuitFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitFlow.swift; sourceTree = "<group>"; };
 		506777FB84837C6132C00C93 /* ShyCloudCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ShyCloudCore; path = Packages/ShyCloudCore; sourceTree = SOURCE_ROOT; };
@@ -78,6 +81,7 @@
 		A462CFE8CA75A37143B24213 /* ShyCloudApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShyCloudApp.swift; sourceTree = "<group>"; };
 		A4B358C050559578D7346D0D /* SystemEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemEvents.swift; sourceTree = "<group>"; };
 		B129DA590AFD1AF909E9D0F4 /* SafetyHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyHelper.swift; sourceTree = "<group>"; };
+		B2D4FE45FE7441B564BB9E57 /* LICENSE */ = {isa = PBXFileReference; path = LICENSE; sourceTree = "<group>"; };
 		C5520F252E10DBCE53578406 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C68546D975F6D2B3F64C83B7 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		DBE6FDCEC51DF5A7CB8EDEAE /* com.ekremus.ShyCloud.Watchdog.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = com.ekremus.ShyCloud.Watchdog.plist; sourceTree = "<group>"; };
@@ -119,6 +123,8 @@
 		7FFA633B2E3628BBD488A10E = {
 			isa = PBXGroup;
 			children = (
+				B2D4FE45FE7441B564BB9E57 /* LICENSE */,
+				2A70B462F657685975DB011E /* THIRD_PARTY_NOTICES.md */,
 				DE26020DD050D7C8919B7E05 /* App */,
 				47DB5063055F2263276247D5 /* Packages */,
 				E197A6C41AA96B2C795FBCDF /* Watchdog */,
@@ -262,7 +268,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				557851C12276ED731FAC6B7C /* Assets.xcassets in Resources */,
+				5DC358CDD95FD83E41404D31 /* LICENSE in Resources */,
 				D5644A4A3BEA86B7A9854E1B /* Localizable.xcstrings in Resources */,
+				8AD3B6ABEABC50C830723961 /* THIRD_PARTY_NOTICES.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -67,6 +67,11 @@ struct SettingsView: View {
                     set: { environment.updater.automaticallyChecks = $0; autoUpdate = $0 }
                 ))
                 Button(String(localized: "Check for Updates…")) { environment.updater.checkForUpdates() }
+                Button(String(localized: "Acknowledgements…")) {
+                    if let url = Bundle.main.url(forResource: "THIRD_PARTY_NOTICES", withExtension: "md") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
             }
 
             Section(String(localized: "Safety helper")) {

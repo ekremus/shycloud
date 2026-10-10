@@ -32,6 +32,10 @@ targets:
     platform: macOS
     sources:
       - path: App
+      - path: THIRD_PARTY_NOTICES.md
+        buildPhase: resources
+      - path: LICENSE
+        buildPhase: resources
       - path: Watchdog/com.ekremus.ShyCloud.Watchdog.plist
         buildPhase:
           copyFiles:
