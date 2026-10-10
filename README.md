@@ -7,8 +7,8 @@
 - ☁️ **Scheduled sync** — iCloud Drive syncs only inside your daily window
 - ⏸ **Sync Off** — vacation / travel / hotspot mode, fully paused
 - ▶️ **Sync On** — normal iCloud, one click
-- 🛟 **Safety first** — iCloud always resumes on quit, sleep, logout, crash (built-in safety helper)
-- 🌙 **Catch-up** — slept through the window? It syncs 30 minutes after you wake
+- 🛟 **Safety first** — iCloud resumes on quit (unless you choose Keep Paused), sleep, logout and crashes (built-in safety helper)
+- 🌙 **Catch-up** — slept through the window? It syncs for 30 minutes after you wake
 - 🫥 **Hideable** — remove the menu bar icon; it keeps working in the background
 - 🍎 Apple Silicon · macOS 26+ · English & Türkçe · no tracking, no account
 
@@ -35,6 +35,15 @@ Optional extras in Settings: pause **Photo analysis** (`photoanalysisd`) and, un
 - **Files that are only in iCloud** (cloud icon in Finder) can't open while sync is paused. Choose **Sync On**, or turn off *Optimize Mac Storage* so files stay downloaded.
 - **Why not on the Mac App Store?** App Store apps run in a sandbox that can't pause other processes.
 - **How do I undo everything?** Choose *Sync On*, or quit ShyCloud, or restart your Mac.
+
+## Uninstall
+
+1. Quit ShyCloud from the menu and choose **Resume iCloud**.
+2. Delete ShyCloud from Applications.
+
+Or with Homebrew: `brew uninstall --cask --zap shycloud`.
+
+The background safety helper is part of the app and goes away with it. You can also switch it off in System Settings › General › Login Items & Extensions.
 
 ## FAQ
 

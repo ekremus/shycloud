@@ -7,8 +7,8 @@
 - ☁️ **Zamanlı senkron** — iCloud Drive yalnızca belirlediğiniz saatlerde senkronlanır
 - ⏸ **Senkron Kapalı** — tatil / seyahat / mobil internet modu
 - ▶️ **Senkron Açık** — normal iCloud, tek tık
-- 🛟 **Önce güvenlik** — çıkışta, uykuda, oturum kapatınca ve çökmede iCloud her zaman geri açılır
-- 🌙 **Telafi** — gece Mac uykudaysa uyanınca 30 dakika senkronlar
+- 🛟 **Önce güvenlik** — çıkışta (Duraklatılmış Kalsın seçilmedikçe), uykuda, oturum kapatınca ve çökmede iCloud geri açılır
+- 🌙 **Telafi** — gece Mac uykudaysa uyanınca 30 dakika boyunca senkronlar
 - 🫥 **Gizlenebilir** — menü ikonunu kaldırın, arka planda çalışmaya devam eder
 - 🍎 Apple Silicon · macOS 26+ · Türkçe & English · takip yok, hesap yok
 
@@ -31,6 +31,15 @@ macOS'ta iCloud Drive'ı duraklatmak için resmi bir düğme yok. ShyCloud, iClo
 - **Yalnızca iCloud'da duran dosyalar** (Finder'da bulut simgeli) duraklatılmışken açılamaz. **Senkron Açık**'ı seçin veya *Mac Depolamasını Optimize Et*'i kapatın.
 - **Neden App Store'da yok?** App Store uygulamaları başka işlemleri duraklatamayan bir korumalı alanda çalışır.
 - **Her şeyi nasıl geri alırım?** *Senkron Açık*'ı seçin, ShyCloud'dan çıkın ya da Mac'i yeniden başlatın.
+
+## Kaldırma
+
+1. Menüden ShyCloud'dan çıkın ve **iCloud'u Sürdür**'ü seçin.
+2. ShyCloud'u Uygulamalar klasöründen silin.
+
+Ya da Homebrew ile: `brew uninstall --cask --zap shycloud`.
+
+Arka plandaki güvenlik yardımcısı uygulamanın parçasıdır ve onunla birlikte kaldırılır. Sistem Ayarları › Genel › Giriş Öğeleri ve Uzantılar'dan da kapatabilirsiniz.
 
 ## Gizlilik
 
