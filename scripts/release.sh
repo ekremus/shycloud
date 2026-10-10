@@ -16,11 +16,27 @@ DIST=/private/tmp/shycloud-dist
 APP="$DIST/export/ShyCloud.app"
 DMG="$DIST/ShyCloud-$VERSION.dmg"
 cd "$ROOT"
+if ! git diff --quiet || ! git diff --cached --quiet; then echo "Working tree not clean" >&2; exit 1; fi
+[ "$(git branch --show-current)" = main ] || { echo "Must be on main" >&2; exit 1; }
+BUILD=$(git rev-list --count HEAD)
+
+notarize() {
+  local out status id
+  out=$(xcrun notarytool submit "$1" --keychain-profile shycloud-notary --wait --output-format json)
+  status=$(printf '%s' "$out" | /usr/bin/plutil -extract status raw -o - -)
+  if [ "$status" != "Accepted" ]; then
+    id=$(printf '%s' "$out" | /usr/bin/plutil -extract id raw -o - - || true)
+    echo "Notarization failed ($status)" >&2
+    xcrun notarytool log "$id" --keychain-profile shycloud-notary || true
+    exit 1
+  fi
+}
+
 rm -rf "$DIST" && mkdir -p "$DIST"
 
 xcodegen generate
 xcodebuild -project ShyCloud.xcodeproj -scheme ShyCloud -configuration Release \
-  -derivedDataPath "$DD" MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="${VERSION//./}" \
+  -derivedDataPath "$DD" MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" \
   -archivePath "$DIST/ShyCloud.xcarchive" archive
 
 cat > "$DIST/export.plist" <<PLIST
@@ -38,22 +54,23 @@ codesign --verify --deep --strict "$APP"
 lipo -archs "$APP/Contents/MacOS/ShyCloud" | grep -qx arm64
 
 ditto -c -k --keepParent "$APP" "$DIST/ShyCloud.zip"
-xcrun notarytool submit "$DIST/ShyCloud.zip" --keychain-profile shycloud-notary --wait
+notarize "$DIST/ShyCloud.zip"
 xcrun stapler staple "$APP"
 
 mkdir -p "$DIST/dmg" && cp -R "$APP" "$DIST/dmg/" && ln -s /Applications "$DIST/dmg/Applications"
 hdiutil create -volname ShyCloud -srcfolder "$DIST/dmg" -ov -format UDZO "$DMG"
 codesign --sign "Developer ID Application" --timestamp "$DMG"
-xcrun notarytool submit "$DMG" --keychain-profile shycloud-notary --wait
+notarize "$DMG"
 xcrun stapler staple "$DMG"
 spctl --assess --type open --context context:primary-signature -v "$DMG"
 
 GENERATE_APPCAST=$(find "$DD/SourcePackages/artifacts" -path "*Sparkle/bin/generate_appcast" -type f | head -1)
 mkdir -p "$DIST/appcast" && cp "$DMG" "$DIST/appcast/"
+[ -f docs/appcast.xml ] && cp docs/appcast.xml "$DIST/appcast/appcast.xml"
 "$GENERATE_APPCAST" --download-url-prefix "https://github.com/ekremus/shycloud/releases/download/v$VERSION/" "$DIST/appcast"
 cp "$DIST/appcast/appcast.xml" docs/appcast.xml
 
-gh release create "v$VERSION" "$DMG" --title "ShyCloud $VERSION" --notes-file <(awk "/^## $VERSION/{f=1;next}/^## /{f=0}f" CHANGELOG.md)
+gh release create "v$VERSION" "$DMG" --title "ShyCloud $VERSION" --notes-file <(awk -v v="$VERSION" '$0 == "## " v {f=1;next} /^## /{f=0} f' CHANGELOG.md)
 git add docs/appcast.xml && git commit -m "release: appcast for $VERSION" && git push
 
 SHA=$(shasum -a 256 "$DMG" | cut -d' ' -f1)
@@ -71,9 +88,12 @@ cask "shycloud" do
   depends_on arch: :arm64
   depends_on macos: ">= :tahoe"
 
+  auto_updates true
+
   app "ShyCloud.app"
 
-  uninstall quit: "com.ekremus.ShyCloud"
+  uninstall quit:      "com.ekremus.ShyCloud",
+            launchctl: "com.ekremus.ShyCloud.Watchdog"
   zap trash: [
     "~/Library/Application Support/ShyCloud",
     "~/Library/Preferences/com.ekremus.ShyCloud.plist",

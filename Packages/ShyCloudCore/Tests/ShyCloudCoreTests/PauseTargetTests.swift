@@ -66,11 +66,13 @@ struct PauseTargetTests {
         }
     }
 
-    @Test func otherUIDInspectorRejectsLiveProcess() {
+    static let hasLiveDriveProcess = !DarwinProcessInspector().processes(for: .drive).isEmpty
+
+    @Test(.enabled(if: PauseTargetTests.hasLiveDriveProcess, "needs a running allowlisted iCloud process"))
+    func otherUIDInspectorRejectsLiveProcess() throws {
         let mine = DarwinProcessInspector()
         let other = DarwinProcessInspector(uid: getuid() &+ 1)
-        // Only meaningful when an allowlisted process runs (not on CI runners without iCloud).
-        guard let bird = mine.processes(for: .drive).first else { return }
+        let bird = try #require(mine.processes(for: .drive).first)
         #expect(mine.target(of: bird) == .drive)
         #expect(other.target(of: bird) == nil)
     }

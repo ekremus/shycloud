@@ -32,6 +32,10 @@ macOS'ta iCloud Drive'ı duraklatmak için resmi bir düğme yok. ShyCloud, iClo
 - **Neden App Store'da yok?** App Store uygulamaları başka işlemleri duraklatamayan bir korumalı alanda çalışır.
 - **Her şeyi nasıl geri alırım?** *Senkron Açık*'ı seçin, ShyCloud'dan çıkın ya da Mac'i yeniden başlatın.
 
+## Gizlilik
+
+Hiçbir veri toplanmaz. Tek ağ erişimi Sparkle güncelleme denetimidir.
+
 ## Lisans
 
 GPL-3.0-or-later — sonsuza kadar ücretsiz; dağıtılan her sürüm açık kaynak kalmak zorundadır. Katkılar MIT lisansıyla kabul edilir ([CONTRIBUTING.md](CONTRIBUTING.md)).

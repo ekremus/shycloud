@@ -12,7 +12,7 @@
 - 🫥 **Hideable** — remove the menu bar icon; it keeps working in the background
 - 🍎 Apple Silicon · macOS 26+ · English & Türkçe · no tracking, no account
 
-![ShyCloud menu](docs/images/menu.png)
+<!-- ![ShyCloud menu](docs/images/menu.png) -->
 
 ## Install
 
