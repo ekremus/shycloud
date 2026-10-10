@@ -9,6 +9,7 @@ final class AppEnvironment {
     let settings: AppSettings
     let safetyHelper: SafetyHelper
     let loginItem: LoginItem
+    let updater: Updater
     let sync: SyncController
     var quitHandled = false
 
@@ -21,6 +22,7 @@ final class AppEnvironment {
         self.settings = settings
         self.safetyHelper = helper
         self.loginItem = LoginItem()
+        self.updater = Updater()
         self.sync = SyncController(
             settings: settings,
             processes: SignalProcessController(),

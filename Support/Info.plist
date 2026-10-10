@@ -33,5 +33,11 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 ekremus · GPL-3.0-or-later</string>
+	<key>SUEnableInstallerLauncherService</key>
+	<false/>
+	<key>SUFeedURL</key>
+	<string>https://ekremus.github.io/shycloud/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>$(SPARKLE_PUBLIC_KEY)</string>
 </dict>
 </plist>

@@ -23,6 +23,9 @@ settings:
 packages:
   ShyCloudCore:
     path: Packages/ShyCloudCore
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.6.0"
 targets:
   ShyCloud:
     type: application
@@ -36,6 +39,7 @@ targets:
             subpath: Contents/Library/LaunchAgents
     dependencies:
       - package: ShyCloudCore
+      - package: Sparkle
       - target: ShyCloudWatchdog
         embed: true
         copy:
@@ -51,10 +55,14 @@ targets:
         LSApplicationCategoryType: public.app-category.utilities
         LSMinimumSystemVersion: "26.0"
         NSHumanReadableCopyright: "© 2026 ekremus · GPL-3.0-or-later"
+        SUFeedURL: https://ekremus.github.io/shycloud/appcast.xml
+        SUPublicEDKey: "$(SPARKLE_PUBLIC_KEY)"
+        SUEnableInstallerLauncherService: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ekremus.ShyCloud
         PRODUCT_NAME: ShyCloud
+        SPARKLE_PUBLIC_KEY: "eguT7WAWmJiUksXzHhnViUHwKOC2TswI7IVB6Idvdx0="
   ShyCloudWatchdog:
     type: tool
     platform: macOS

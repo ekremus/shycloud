@@ -12,6 +12,7 @@ struct SettingsView: View {
     @State private var loginOn = false
     @State private var loginNeedsApproval = false
     @State private var helperEnabled = true
+    @State private var autoUpdate = true
 
     var body: some View {
         @Bindable var settings = environment.settings
@@ -61,6 +62,11 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                Toggle(String(localized: "Automatically check for updates"), isOn: Binding(
+                    get: { autoUpdate },
+                    set: { environment.updater.automaticallyChecks = $0; autoUpdate = $0 }
+                ))
+                Button(String(localized: "Check for Updates…")) { environment.updater.checkForUpdates() }
             }
 
             Section(String(localized: "Safety helper")) {
@@ -88,6 +94,7 @@ struct SettingsView: View {
         loginOn = environment.loginItem.isOn
         loginNeedsApproval = environment.loginItem.status == .requiresApproval
         helperEnabled = environment.safetyHelper.isEnabled
+        autoUpdate = environment.updater.automaticallyChecks
         environment.sync.apply()
     }
 

@@ -1,6 +1,8 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Automatically check for updates" : { "localizations" : { "tr" : { "stringUnit" : { "state" : "translated", "value" : "Güncellemeleri otomatik denetle" } } } },
+    "Check for Updates…" : { "localizations" : { "tr" : { "stringUnit" : { "state" : "translated", "value" : "Güncellemeleri Denetle…" } } } },
     "About ShyCloud": {
       "localizations": {
         "tr": {
