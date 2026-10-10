@@ -9,6 +9,7 @@ public struct DarwinSignaler: Signaling {
     public init() {}
 
     public func send(_ signal: Int32, to pid: Int32) -> Bool {
-        kill(pid, signal) == 0
+        guard pid > 0 else { return false }
+        return kill(pid, signal) == 0
     }
 }

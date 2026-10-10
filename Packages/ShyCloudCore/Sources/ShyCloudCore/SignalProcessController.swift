@@ -37,14 +37,22 @@ public final class SignalProcessController: ProcessControlling {
 
     public func resume(_ targets: [PauseTarget]) {
         for target in PauseTarget.resumeOrder where targets.contains(target) {
-            for id in inspector.processes(for: target) {
+            // Tracked ids (even if a scan misses them) plus freshly listed ones.
+            var candidates = Set(inspector.processes(for: target))
+            for id in paused where inspector.target(of: id) == target {
+                candidates.insert(id)
+            }
+            for id in candidates.sorted(by: { $0.pid < $1.pid }) {
+                // Re-verify identity immediately before signalling (pid reuse).
                 guard inspector.target(of: id) == target else { continue }
-                _ = signaler.send(SIGCONT, to: id.pid)
+                if signaler.send(SIGCONT, to: id.pid) {
+                    paused.remove(id)
+                }
             }
         }
+        // Drop tracked ids whose process is really gone.
         paused = paused.filter { id in
-            guard let target = inspector.target(of: id) else { return false }
-            return !targets.contains(target)
+            inspector.target(of: id) != nil || inspector.isStopped(id)
         }
         for (id, source) in exitSources where !paused.contains(id) {
             source.cancel()
@@ -56,16 +64,19 @@ public final class SignalProcessController: ProcessControlling {
         paused.filter { inspector.isStopped($0) }.sorted { $0.pid < $1.pid }
     }
 
+    func processDidExit(_ id: ProcessIdentity) {
+        exitSources[id]?.cancel()
+        exitSources[id] = nil
+        guard paused.remove(id) != nil else { return }
+        onPausedProcessExit?()
+    }
+
     private func watchExit(of id: ProcessIdentity) {
         guard watchExits, exitSources[id] == nil else { return }
         let source = DispatchSource.makeProcessSource(identifier: id.pid, eventMask: .exit, queue: .main)
         source.setEventHandler { [weak self] in
             MainActor.assumeIsolated {
-                guard let self else { return }
-                self.exitSources[id]?.cancel()
-                self.exitSources[id] = nil
-                self.paused.remove(id)
-                self.onPausedProcessExit?()
+                self?.processDidExit(id)
             }
         }
         exitSources[id] = source
