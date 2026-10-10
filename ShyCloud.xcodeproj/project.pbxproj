@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		02B9CD51CF29FB936B458F0A /* SystemEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B358C050559578D7346D0D /* SystemEvents.swift */; };
 		161C72DF67F0FE1734863ECA /* AboutPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2FEF68160A38F52EDF0D52 /* AboutPanel.swift */; };
+		557851C12276ED731FAC6B7C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C5520F252E10DBCE53578406 /* Assets.xcassets */; };
 		558E18728C43B965626DB317 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED73CEEC237AD29F0A23D6C9 /* SettingsWindowController.swift */; };
 		5894CD379957475153DF964E /* StatusText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F3B13EC003CD786D207EC22 /* StatusText.swift */; };
 		5F0421FE19D1E8FA0EB32937 /* ShyCloudCore in Frameworks */ = {isa = PBXBuildFile; productRef = D9C486758FEB7086EA5AEF79 /* ShyCloudCore */; };
@@ -77,6 +78,7 @@
 		A462CFE8CA75A37143B24213 /* ShyCloudApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShyCloudApp.swift; sourceTree = "<group>"; };
 		A4B358C050559578D7346D0D /* SystemEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemEvents.swift; sourceTree = "<group>"; };
 		B129DA590AFD1AF909E9D0F4 /* SafetyHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyHelper.swift; sourceTree = "<group>"; };
+		C5520F252E10DBCE53578406 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C68546D975F6D2B3F64C83B7 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		DBE6FDCEC51DF5A7CB8EDEAE /* com.ekremus.ShyCloud.Watchdog.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = com.ekremus.ShyCloud.Watchdog.plist; sourceTree = "<group>"; };
 		E6D768649C79D3102FC27611 /* LoginItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItem.swift; sourceTree = "<group>"; };
@@ -139,6 +141,7 @@
 				1A2FEF68160A38F52EDF0D52 /* AboutPanel.swift */,
 				F86F49C52DE021E3534859D7 /* AppDelegate.swift */,
 				C68546D975F6D2B3F64C83B7 /* AppEnvironment.swift */,
+				C5520F252E10DBCE53578406 /* Assets.xcassets */,
 				8EA632888C72DFEB1399A2E1 /* Localizable.xcstrings */,
 				E6D768649C79D3102FC27611 /* LoginItem.swift */,
 				70C407317C3B4369E9E10ADF /* MenuContent.swift */,
@@ -258,6 +261,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				557851C12276ED731FAC6B7C /* Assets.xcassets in Resources */,
 				D5644A4A3BEA86B7A9854E1B /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

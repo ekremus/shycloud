@@ -63,6 +63,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.ekremus.ShyCloud
         PRODUCT_NAME: ShyCloud
         SPARKLE_PUBLIC_KEY: "eguT7WAWmJiUksXzHhnViUHwKOC2TswI7IVB6Idvdx0="
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
   ShyCloudWatchdog:
     type: tool
     platform: macOS
