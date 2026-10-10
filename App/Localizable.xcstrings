@@ -1,0 +1,426 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "About ShyCloud": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ShyCloud Hakkında"
+          }
+        }
+      }
+    },
+    "Advanced": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gelişmiş"
+          }
+        }
+      }
+    },
+    "Also pauses Messages, Notes, Reminders and other apps that sync with iCloud. Those apps may freeze until sync resumes.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mesajlar, Notlar, Anımsatıcılar ve iCloud ile senkronlanan diğer uygulamaları da duraklatır. Bu uygulamalar senkron açılana kadar donabilir."
+          }
+        }
+      }
+    },
+    "CloudKit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CloudKit"
+          }
+        }
+      }
+    },
+    "End": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitiş"
+          }
+        }
+      }
+    },
+    "General": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genel"
+          }
+        }
+      }
+    },
+    "iCloud Drive": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud Drive"
+          }
+        }
+      }
+    },
+    "iCloud paused": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud duraklatıldı"
+          }
+        }
+      }
+    },
+    "iCloud resumes automatically when you restart or log out.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeniden başlattığınızda veya oturumu kapattığınızda iCloud kendiliğinden açılır."
+          }
+        }
+      }
+    },
+    "iCloud syncing": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud senkronize ediliyor"
+          }
+        }
+      }
+    },
+    "Keep iCloud paused after quitting?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çıktıktan sonra iCloud duraklatılmış kalsın mı?"
+          }
+        }
+      }
+    },
+    "Keep Paused": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duraklatılmış Kalsın"
+          }
+        }
+      }
+    },
+    "Last synced: %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son senkron: %@"
+          }
+        }
+      }
+    },
+    "Needs approval in System Settings.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sistem Ayarları'nda onay gerekiyor."
+          }
+        }
+      }
+    },
+    "On — resumes iCloud if ShyCloud ever stops unexpectedly.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Açık — ShyCloud beklenmedik şekilde kapanırsa iCloud'u açar."
+          }
+        }
+      }
+    },
+    "Open at login": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Girişte aç"
+          }
+        }
+      }
+    },
+    "Open ShyCloud again from Applications to return here.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buraya dönmek için ShyCloud'u Uygulamalar'dan yeniden açın."
+          }
+        }
+      }
+    },
+    "Open System Settings…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sistem Ayarları'nı Aç…"
+          }
+        }
+      }
+    },
+    "Pause iCloud Drive sync on a schedule.\nNot affiliated with Apple. iCloud is a trademark of Apple Inc.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud Drive senkronunu zamanlayarak duraklatın.\nApple ile bağlantılı değildir. iCloud, Apple Inc.'in ticari markasıdır."
+          }
+        }
+      }
+    },
+    "Pause iCloud Photos in the Photos app…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud Fotoğrafları'nı Fotoğraflar uygulamasında duraklat…"
+          }
+        }
+      }
+    },
+    "Photo analysis": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraf analizi"
+          }
+        }
+      }
+    },
+    "Quit ShyCloud": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ShyCloud'dan Çık"
+          }
+        }
+      }
+    },
+    "Resume iCloud": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud'u Aç"
+          }
+        }
+      }
+    },
+    "Safety helper": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güvenlik yardımcısı"
+          }
+        }
+      }
+    },
+    "Safety helper disabled — not pausing": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güvenlik yardımcısı kapalı — duraklatılmıyor"
+          }
+        }
+      }
+    },
+    "Safety helper is disabled in System Settings › General › Login Items & Extensions. ShyCloud won't pause iCloud until it is enabled.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güvenlik yardımcısı Sistem Ayarları › Genel › Giriş Öğeleri ve Uzantılar'da kapalı. Açılana kadar ShyCloud iCloud'u duraklatmaz."
+          }
+        }
+      }
+    },
+    "Scheduled (%@–%@)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zamanlı (%1$@–%2$@)"
+          }
+        }
+      }
+    },
+    "Settings…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayarlar…"
+          }
+        }
+      }
+    },
+    "Show in menu bar": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menü çubuğunda göster"
+          }
+        }
+      }
+    },
+    "ShyCloud — Catching up · pauses at %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ShyCloud — Telafi senkronu · duraklama: %@"
+          }
+        }
+      }
+    },
+    "ShyCloud — Paused": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ShyCloud — Duraklatıldı"
+          }
+        }
+      }
+    },
+    "ShyCloud — Paused · syncs at %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ShyCloud — Duraklatıldı · senkron: %@"
+          }
+        }
+      }
+    },
+    "ShyCloud — Syncing": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ShyCloud — Senkron açık"
+          }
+        }
+      }
+    },
+    "ShyCloud — Syncing · pauses at %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ShyCloud — Senkron açık · duraklama: %@"
+          }
+        }
+      }
+    },
+    "ShyCloud Settings": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ShyCloud Ayarları"
+          }
+        }
+      }
+    },
+    "Start": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başlangıç"
+          }
+        }
+      }
+    },
+    "Start and end can't be the same time.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başlangıç ve bitiş aynı saat olamaz."
+          }
+        }
+      }
+    },
+    "Sync Off": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senkron Kapalı"
+          }
+        }
+      }
+    },
+    "Sync On": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senkron Açık"
+          }
+        }
+      }
+    },
+    "Sync window": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senkron saatleri"
+          }
+        }
+      }
+    },
+    "What to pause": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neler duraklatılsın"
+          }
+        }
+      }
+    },
+    "While paused, files stored only in iCloud (cloud icon in Finder) can't open until sync runs.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duraklatılmışken yalnızca iCloud'da duran dosyalar (Finder'da bulut simgeli) senkron açılana kadar açılamaz."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
