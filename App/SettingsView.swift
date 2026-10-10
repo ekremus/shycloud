@@ -87,6 +87,9 @@ struct SettingsView: View {
             Text("While paused, files stored only in iCloud (cloud icon in Finder) can't open until sync runs.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+            // The only way to quit when the menu bar icon is hidden.
+            Button(String(localized: "Quit ShyCloud")) { QuitFlow.run() }
         }
         .formStyle(.grouped)
         .frame(width: 440)

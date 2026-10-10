@@ -33,6 +33,8 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 ekremus · GPL-3.0-or-later</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
 	<key>SUEnableInstallerLauncherService</key>
 	<false/>
 	<key>SUFeedURL</key>

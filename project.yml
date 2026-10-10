@@ -63,6 +63,7 @@ targets:
         SUFeedURL: https://ekremus.github.io/shycloud/appcast.xml
         SUPublicEDKey: "$(SPARKLE_PUBLIC_KEY)"
         SUEnableInstallerLauncherService: false
+        SUEnableAutomaticChecks: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ekremus.ShyCloud

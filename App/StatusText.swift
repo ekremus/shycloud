@@ -29,8 +29,17 @@ enum StatusText {
         }
     }
 
+    /// "Today 08:59", "Yesterday 02:30", or a medium date for older syncs.
+    private static let lastSyncedFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        formatter.doesRelativeDateFormatting = true
+        return formatter
+    }()
+
     static func lastSynced(_ date: Date) -> String {
-        String(localized: "Last synced: \(date.formatted(date: .abbreviated, time: .shortened))")
+        String(localized: "Last synced: \(lastSyncedFormatter.string(from: date))")
     }
 
     static func title(for mode: SyncMode, schedule: Schedule) -> String {

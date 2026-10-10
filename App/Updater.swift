@@ -1,3 +1,4 @@
+import AppKit
 import Sparkle
 
 /// Sparkle 2 wrapper. Feed: SUFeedURL in Info.plist.
@@ -11,6 +12,7 @@ final class Updater {
     }
 
     func checkForUpdates() {
+        NSApp.activate() // accessory app: bring Sparkle's window to front
         controller.checkForUpdates(nil)
     }
 }

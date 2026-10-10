@@ -13,6 +13,7 @@ enum QuitFlow {
     private static func quit() {
         let environment = AppEnvironment.shared
         var keepPaused = false
+        environment.sync.apply() // ask about the current state, not the last tick's
         if environment.sync.isPausedNow {
             NSApp.activate()
             let alert = NSAlert()
