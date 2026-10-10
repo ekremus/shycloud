@@ -32,8 +32,6 @@ targets:
     platform: macOS
     sources:
       - path: App
-      - path: THIRD_PARTY_NOTICES.md
-        buildPhase: resources
       - path: LICENSE
         buildPhase: resources
       - path: Watchdog/com.ekremus.ShyCloud.Watchdog.plist
@@ -41,6 +39,14 @@ targets:
           copyFiles:
             destination: wrapper
             subpath: Contents/Library/LaunchAgents
+    postCompileScripts:
+      - name: Copy acknowledgements as plain text
+        script: |
+          cp "$SRCROOT/THIRD_PARTY_NOTICES.md" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/THIRD_PARTY_NOTICES.txt"
+        inputFiles:
+          - $(SRCROOT)/THIRD_PARTY_NOTICES.md
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/THIRD_PARTY_NOTICES.txt
     dependencies:
       - package: ShyCloudCore
       - package: Sparkle

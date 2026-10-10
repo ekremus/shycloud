@@ -22,7 +22,6 @@
 		7313E2FA075EAB29D0228EDF /* ShyCloudCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2CDAEC4E45C3492F3A1C1FC0 /* ShyCloudCore */; };
 		7C65BA8075F89BE2A78EEEC4 /* LoginItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6D768649C79D3102FC27611 /* LoginItem.swift */; };
 		87FB07480D094966BCE3B41A /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = C68546D975F6D2B3F64C83B7 /* AppEnvironment.swift */; };
-		8AD3B6ABEABC50C830723961 /* THIRD_PARTY_NOTICES.md in Resources */ = {isa = PBXBuildFile; fileRef = 2A70B462F657685975DB011E /* THIRD_PARTY_NOTICES.md */; };
 		9A84F03EA3A764C53DC99FE3 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A18737AE1935B023AAC2202 /* Updater.swift */; };
 		B9D883C97D20B18BA5C41694 /* QuitFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AC2BD382578FD066D7C032E /* QuitFlow.swift */; };
 		BAFA0D0BD690E0E1D62B9BBA /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 573B4F8412F665309A514263 /* Sparkle */; };
@@ -69,7 +68,6 @@
 /* Begin PBXFileReference section */
 		0A18737AE1935B023AAC2202 /* Updater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
 		1A2FEF68160A38F52EDF0D52 /* AboutPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutPanel.swift; sourceTree = "<group>"; };
-		2A70B462F657685975DB011E /* THIRD_PARTY_NOTICES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = THIRD_PARTY_NOTICES.md; sourceTree = "<group>"; };
 		34AB5E2364557E6E396E0C88 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		4AC2BD382578FD066D7C032E /* QuitFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitFlow.swift; sourceTree = "<group>"; };
 		506777FB84837C6132C00C93 /* ShyCloudCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ShyCloudCore; path = Packages/ShyCloudCore; sourceTree = SOURCE_ROOT; };
@@ -124,7 +122,6 @@
 			isa = PBXGroup;
 			children = (
 				B2D4FE45FE7441B564BB9E57 /* LICENSE */,
-				2A70B462F657685975DB011E /* THIRD_PARTY_NOTICES.md */,
 				DE26020DD050D7C8919B7E05 /* App */,
 				47DB5063055F2263276247D5 /* Packages */,
 				E197A6C41AA96B2C795FBCDF /* Watchdog */,
@@ -180,6 +177,7 @@
 			buildConfigurationList = 626FB2725A5FAA32F4572F5F /* Build configuration list for PBXNativeTarget "ShyCloud" */;
 			buildPhases = (
 				7B8BEC2325AF47550CE7C2EA /* Sources */,
+				E92E74FFC0B97DFFBC7A6843 /* Copy acknowledgements as plain text */,
 				BDA761BA7ACDF73456EB347C /* Resources */,
 				134ABD47B81E4CFC2540CBB3 /* CopyFiles */,
 				3C1DA4CABD3EB3C8B6A56219 /* Frameworks */,
@@ -270,11 +268,33 @@
 				557851C12276ED731FAC6B7C /* Assets.xcassets in Resources */,
 				5DC358CDD95FD83E41404D31 /* LICENSE in Resources */,
 				D5644A4A3BEA86B7A9854E1B /* Localizable.xcstrings in Resources */,
-				8AD3B6ABEABC50C830723961 /* THIRD_PARTY_NOTICES.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		E92E74FFC0B97DFFBC7A6843 /* Copy acknowledgements as plain text */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/THIRD_PARTY_NOTICES.md",
+			);
+			name = "Copy acknowledgements as plain text";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/THIRD_PARTY_NOTICES.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp \"$SRCROOT/THIRD_PARTY_NOTICES.md\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/THIRD_PARTY_NOTICES.txt\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		7B8BEC2325AF47550CE7C2EA /* Sources */ = {

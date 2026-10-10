@@ -132,13 +132,13 @@ struct SafetyTests {
 
     @Test func watchdogAliveWithinWindow() {
         #expect(WatchdogDecision.isWatchdogAlive(lastRun: now, now: now))
-        #expect(WatchdogDecision.isWatchdogAlive(lastRun: now.addingTimeInterval(-150), now: now))
+        #expect(WatchdogDecision.isWatchdogAlive(lastRun: now.addingTimeInterval(-180), now: now))
         #expect(WatchdogDecision.isWatchdogAlive(lastRun: now.addingTimeInterval(60), now: now))
     }
 
     @Test func watchdogNotAliveWhenMissingStaleOrFarFuture() {
         #expect(!WatchdogDecision.isWatchdogAlive(lastRun: nil, now: now))
-        #expect(!WatchdogDecision.isWatchdogAlive(lastRun: now.addingTimeInterval(-151), now: now))
+        #expect(!WatchdogDecision.isWatchdogAlive(lastRun: now.addingTimeInterval(-181), now: now))
         #expect(!WatchdogDecision.isWatchdogAlive(lastRun: now.addingTimeInterval(61), now: now))
     }
 

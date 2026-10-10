@@ -2,6 +2,8 @@
 
 Run on Apple Silicon, macOS 26 and macOS 27. Build: `xcodebuild -project ShyCloud.xcodeproj -scheme ShyCloud -configuration Debug -derivedDataPath /private/tmp/shycloud-dd build`, then copy `/private/tmp/shycloud-dd/Build/Products/Debug/ShyCloud.app` to `/Applications` (SMAppService needs a stable location).
 
+**Always install from a clean build (`rm -rf /private/tmp/shycloud-dd` first); incremental builds can break the embedded watchdog's signature.**
+
 Useful commands:
 - State of targets: `ps -axo pid,stat,comm | grep -E "/(bird|cloudd|photoanalysisd)$"` (`T` = paused, `S`/`R` = running)
 - Watchdog registered: `launchctl print gui/$(id -u)/com.ekremus.ShyCloud.Watchdog | head -5`
@@ -17,7 +19,7 @@ Useful commands:
 | 5 | Simulator safety | Boot any iOS Simulator, choose Sync Off with CloudKit ticked | Only `/System/Library/...cloudd` is `T`; Simulator `cloudd` stays `S` |
 | 6 | Optional targets | Tick Photo analysis, untick again | `photoanalysisd` `T`, then `S` immediately |
 | 7 | Respawn | While paused: `kill -9 <bird pid>` | New `bird` pid appears and is `T` within a few seconds |
-| 8 | Sleep/wake | Sync Off → sleep 1 min → wake | During sleep targets resumed; after wake paused again |
+| 8 | Sleep/wake | Sync Off → sleep 1 min → wake X
 | 9 | Catch-up | `defaults write com.ekremus.ShyCloud lastSyncedAt -date "2026-01-01 00:00:00 +0000"`, relaunch outside window | Status "Catching up · pauses at …" for 30 min |
 | 10 | Quit, resume | Sync Off → Quit → Resume iCloud | `bird` `S`; no `keep-paused.json` |
 | 11 | Quit, keep paused | Sync Off → Quit → Keep Paused, wait 3 min | `bird` stays `T`; `keep-paused.json` exists; watchdog does not resume |
@@ -33,4 +35,4 @@ Useful commands:
 | 21 | Watchdog dry run | Quit ShyCloud (Resume), run `/Applications/ShyCloud.app/Contents/MacOS/ShyCloudWatchdog; echo $?` | `0`; `bird` state `S`/`R`, never `T` |
 | 22 | SIGTERM | Sync Off → `kill -TERM <ShyCloud pid>` | App quits and `bird` is `S`/`R` immediately (no 3-minute wait) |
 | 23 | Moved app | First launch from the DMG, quit (Resume), copy to /Applications and launch from there, Sync Off, then `kill -9 <ShyCloud pid>` | Watchdog resumes `bird` within ~3 min (registration follows the new path) |
-| 24 | Fresh install liveness | `rm ~/Library/Application\ Support/ShyCloud/watchdog-ran`, `defaults delete com.ekremus.ShyCloud watchdogRegisteredPath`, launch outside the window | Status shows "Safety helper disabled — not pausing" for at most ~30 s until the watchdog's first run, then pauses |
+| 24 | Fresh install liveness | `rm ~/Library/Application\ Support/ShyCloud/watchdog-ran`, `defaults delete com.ekremus.ShyCloud watchdogRegisteredPath`, launch outside the window | Status shows "Starting safety helper…" (nothing paused) until the watchdog's first run, then pauses |

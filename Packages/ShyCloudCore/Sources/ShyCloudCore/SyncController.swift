@@ -20,7 +20,7 @@ public final class SyncController {
     @ObservationIgnored private let activity: any ActivityHolding
     @ObservationIgnored private let now: @MainActor () -> Date
     @ObservationIgnored private let calendar: @MainActor () -> Calendar
-    @ObservationIgnored private let isHelperEnabled: @MainActor () -> Bool
+    @ObservationIgnored private let helperState: @MainActor () -> SafetyHelperState
     @ObservationIgnored private var runningSince: Date?
     @ObservationIgnored private var catchUpUntil: Date?
     /// Between willSleep and didWake nothing may re-pause (a late tick could fire).
@@ -39,7 +39,7 @@ public final class SyncController {
         activity: any ActivityHolding,
         now: @escaping @MainActor () -> Date = { Date() },
         calendar: @escaping @MainActor () -> Calendar = { Calendar.current },
-        isHelperEnabled: @escaping @MainActor () -> Bool
+        helperState: @escaping @MainActor () -> SafetyHelperState
     ) {
         self.settings = settings
         self.processes = processes
@@ -47,7 +47,7 @@ public final class SyncController {
         self.activity = activity
         self.now = now
         self.calendar = calendar
-        self.isHelperEnabled = isHelperEnabled
+        self.helperState = helperState
     }
 
     /// Launch sequence, spec §5.1.
@@ -139,7 +139,8 @@ public final class SyncController {
             ? scheduledNextChange(at: date, insideWindow: insideWindow, calendar: cal)
             : nil
 
-        if !wantsRunning, isHeartbeatWritten, isHelperEnabled() {
+        let helper = helperState()
+        if !wantsRunning, isHeartbeatWritten, helper == .working {
             let enabled = settings.enabledTargets
             processes.resume(PauseTarget.allCases.filter { !enabled.contains($0) })
             processes.pause(enabled)
@@ -152,7 +153,9 @@ public final class SyncController {
         processes.resumeAll()
         if runningSince == nil { runningSince = date }
         if !wantsRunning {
-            status = .helperDisabled
+            // Not pausing: either the helper is still starting up (or launchd skipped its runs during sleep)
+            // or it is genuinely unavailable.
+            status = isHeartbeatWritten && helper == .starting ? .waitingForHelper : .helperDisabled
         } else if settings.mode == .scheduled, !insideWindow, catchUpUntil != nil, let nextChange {
             status = .catchingUp(until: nextChange)
         } else {

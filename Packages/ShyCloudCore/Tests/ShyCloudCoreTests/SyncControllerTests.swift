@@ -45,7 +45,7 @@ final class FakeActivity: ActivityHolding {
 @MainActor
 final class Harness {
     var date: Date
-    var helperEnabled = true
+    var helperState: SafetyHelperState = .working
     let settings: AppSettings
     let processes: FakeProcesses
     let activity = FakeActivity()
@@ -57,7 +57,7 @@ final class Harness {
         activity: activity,
         now: { [unowned self] in self.date },
         calendar: { TestTime.calendar() },
-        isHelperEnabled: { [unowned self] in self.helperEnabled }
+        helperState: { [unowned self] in self.helperState }
     )
 
     /// `paused` simulates targets left stopped by a previous crash.
@@ -134,11 +134,50 @@ struct SyncControllerTests {
 
     @Test func helperDisabledNeverPauses() {
         let h = Harness("2026-10-12 14:00")
-        h.helperEnabled = false
+        h.helperState = .disabled
         h.controller.start(registerHelper: {})
         #expect(h.processes.paused.isEmpty)
         #expect(h.controller.status == .helperDisabled)
         #expect(!h.controller.isPausedNow)
+    }
+
+    @Test func helperStartingWaitsWithoutPausing() {
+        let h = Harness("2026-10-12 14:00")
+        h.helperState = .starting
+        h.controller.start(registerHelper: {})
+        #expect(h.processes.paused.isEmpty)
+        #expect(h.controller.status == .waitingForHelper)
+        #expect(!h.controller.isPausedNow)
+        #expect(!h.activity.holding)
+    }
+
+    @Test func helperStartingThenWorkingPausesOnNextTick() {
+        let h = Harness("2026-10-12 14:00")
+        h.helperState = .starting
+        h.controller.start(registerHelper: {})
+        #expect(h.processes.paused.isEmpty)
+        h.helperState = .working
+        h.controller.tick()
+        #expect(h.processes.paused == [.drive])
+        #expect(h.controller.status.isPaused)
+    }
+
+    @Test func helperStartingWhilePausedResumesAndWaits() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        #expect(h.processes.paused == [.drive])
+        h.helperState = .starting
+        h.controller.tick()
+        #expect(h.processes.paused.isEmpty)
+        #expect(h.controller.status == .waitingForHelper)
+    }
+
+    @Test func helperStartingWhileSyncingStaysSyncing() {
+        let h = Harness("2026-10-12 08:00") // inside the sync window
+        h.helperState = .starting
+        h.controller.start(registerHelper: {})
+        #expect(h.controller.status != .waitingForHelper)
+        #expect(!h.controller.status.isPaused)
     }
 
     @Test func launchOrderClearsFlagWritesHeartbeatResumesThenRegisters() throws {
@@ -366,7 +405,7 @@ struct SyncControllerTests {
         let h = Harness("2026-10-12 14:00")
         h.controller.start(registerHelper: {})
         #expect(h.processes.paused == [.drive])
-        h.helperEnabled = false
+        h.helperState = .disabled
         h.controller.tick()
         #expect(h.processes.paused.isEmpty)
         #expect(h.controller.status == .helperDisabled)

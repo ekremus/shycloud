@@ -26,6 +26,8 @@ enum StatusText {
             String(localized: "ShyCloud — Catching up · pauses at \(time(until))")
         case .helperDisabled:
             String(localized: "Safety helper disabled — not pausing")
+        case .waitingForHelper:
+            String(localized: "ShyCloud — Starting safety helper…")
         }
     }
 

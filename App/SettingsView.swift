@@ -11,8 +11,7 @@ struct SettingsView: View {
     @State private var scheduleError = false
     @State private var loginOn = false
     @State private var loginNeedsApproval = false
-    @State private var helperRegistered = true
-    @State private var helperWorking = true
+    @State private var helperState: SafetyHelperState = .working
     @State private var autoUpdate = true
 
     var body: some View {
@@ -69,19 +68,20 @@ struct SettingsView: View {
                 ))
                 Button(String(localized: "Check for Updates…")) { environment.updater.checkForUpdates() }
                 Button(String(localized: "Acknowledgements…")) {
-                    if let url = Bundle.main.url(forResource: "THIRD_PARTY_NOTICES", withExtension: "md") {
+                    if let url = Bundle.main.url(forResource: "THIRD_PARTY_NOTICES", withExtension: "txt") {
                         NSWorkspace.shared.open(url)
                     }
                 }
             }
 
             Section(String(localized: "Safety helper")) {
-                if helperWorking {
+                switch helperState {
+                case .working:
                     Label(String(localized: "On — resumes iCloud if ShyCloud ever stops unexpectedly."), systemImage: "checkmark.shield")
-                } else if helperRegistered {
+                case .starting:
                     Text("Starting safety helper…")
                         .foregroundStyle(.secondary)
-                } else {
+                case .disabled:
                     Text("Safety helper is disabled in System Settings › General › Login Items & Extensions. ShyCloud won't pause iCloud until it is enabled.")
                         .foregroundStyle(.orange)
                     Button(String(localized: "Open System Settings…")) { environment.safetyHelper.openSystemSettings() }
@@ -105,8 +105,7 @@ struct SettingsView: View {
     private func refresh() {
         loginOn = environment.loginItem.isOn
         loginNeedsApproval = environment.loginItem.status == .requiresApproval
-        helperRegistered = environment.safetyHelper.isEnabled
-        helperWorking = environment.isSafetyHelperWorking
+        helperState = environment.helperState
         autoUpdate = environment.updater.automaticallyChecks
         environment.sync.apply()
     }

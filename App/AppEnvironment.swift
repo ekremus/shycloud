@@ -16,7 +16,7 @@ final class AppEnvironment {
         files: .standard,
         activity: ProcessActivityHolder(),
         // Registered is not enough: the watchdog must also have actually run recently.
-        isHelperEnabled: { [unowned self] in self.isSafetyHelperWorking }
+        helperState: { [unowned self] in self.helperState }
     )
     var quitHandled = false
 
@@ -32,10 +32,12 @@ final class AppEnvironment {
         self.updater = Updater()
     }
 
-    /// Registration is enabled AND the watchdog ran recently (see `WatchdogDecision`).
-    var isSafetyHelperWorking: Bool {
-        safetyHelper.isEnabled
-            && WatchdogDecision.isWatchdogAlive(lastRun: SafetyFiles.standard.readWatchdogRan(), now: Date())
+    /// Not enabled: `.disabled`. Enabled but the watchdog hasn't run recently (fresh install, or launchd skipped
+    /// its runs during sleep): `.starting`. Otherwise `.working` (see `WatchdogDecision`).
+    var helperState: SafetyHelperState {
+        guard safetyHelper.isEnabled else { return .disabled }
+        let alive = WatchdogDecision.isWatchdogAlive(lastRun: SafetyFiles.standard.readWatchdogRan(), now: Date())
+        return alive ? .working : .starting
     }
 
     func start() {
