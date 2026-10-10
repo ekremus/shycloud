@@ -5,17 +5,28 @@ import Testing
 @MainActor
 final class FakeProcesses: ProcessControlling {
     var onPausedProcessExit: (@MainActor () -> Void)?
-    private(set) var paused: Set<PauseTarget> = []
+    private(set) var paused: Set<PauseTarget>
+    /// One entry per non-empty call, e.g. "resume drive,photoAnalysis,cloudKit" (pause order).
     private(set) var log: [String] = []
+
+    init(paused: Set<PauseTarget> = []) {
+        self.paused = paused
+    }
 
     func pause(_ targets: [PauseTarget]) {
         paused.formUnion(targets)
-        if !targets.isEmpty { log.append("pause") }
+        record("pause", targets)
     }
 
     func resume(_ targets: [PauseTarget]) {
         paused.subtract(targets)
-        if !targets.isEmpty { log.append("resume") }
+        record("resume", targets)
+    }
+
+    private func record(_ action: String, _ targets: [PauseTarget]) {
+        guard !targets.isEmpty else { return }
+        let names = PauseTarget.pauseOrder.filter(targets.contains).map(\.rawValue)
+        log.append("\(action) \(names.joined(separator: ","))")
     }
 
     func pausedProcesses() -> [ProcessIdentity] {
@@ -36,7 +47,7 @@ final class Harness {
     var date: Date
     var helperEnabled = true
     let settings: AppSettings
-    let processes = FakeProcesses()
+    let processes: FakeProcesses
     let activity = FakeActivity()
     let files: SafetyFiles
     lazy var controller = SyncController(
@@ -49,8 +60,10 @@ final class Harness {
         isHelperEnabled: { [unowned self] in self.helperEnabled }
     )
 
-    init(_ text: String) {
+    /// `paused` simulates targets left stopped by a previous crash.
+    init(_ text: String, paused: Set<PauseTarget> = []) {
         date = TestTime.date(text)
+        processes = FakeProcesses(paused: paused)
         let name = "shycloud-tests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: name)!
         defaults.removePersistentDomain(forName: name)
@@ -59,6 +72,16 @@ final class Harness {
     }
 
     func at(_ text: String) { date = TestTime.date(text) }
+
+    /// Replaces the safety directory with a regular file so every write fails.
+    func breakFiles() throws {
+        try? FileManager.default.removeItem(at: files.directory)
+        try Data().write(to: files.directory)
+    }
+
+    func repairFiles() throws {
+        try FileManager.default.removeItem(at: files.directory)
+    }
 }
 
 @MainActor
@@ -119,14 +142,20 @@ struct SyncControllerTests {
     }
 
     @Test func launchOrderClearsFlagWritesHeartbeatResumesThenRegisters() throws {
-        let h = Harness("2026-10-12 14:00")
+        let h = Harness("2026-10-12 14:00", paused: Set(PauseTarget.allCases)) // previous crash
         try h.files.writeKeepPaused([ProcessIdentity(pid: 1, startTime: 1)])
+        var keepPausedWhenRegistering: [ProcessIdentity]?? = .none
+        var heartbeatWhenRegistering: Date?
         var pausedWhenRegistering: Set<PauseTarget>?
-        h.controller.start(registerHelper: { pausedWhenRegistering = h.processes.paused })
-        #expect(h.files.readKeepPaused() == nil)
-        #expect(h.files.readHeartbeat() == h.date)
-        #expect(h.processes.log.first == "resume")
+        h.controller.start(registerHelper: {
+            keepPausedWhenRegistering = .some(h.files.readKeepPaused())
+            heartbeatWhenRegistering = h.files.readHeartbeat()
+            pausedWhenRegistering = h.processes.paused
+        })
+        #expect(keepPausedWhenRegistering == .some(nil))
+        #expect(heartbeatWhenRegistering == h.date)
         #expect(pausedWhenRegistering == [])
+        #expect(h.processes.log.first == "resume drive,photoAnalysis,cloudKit")
     }
 
     @Test func firstLaunchDoesNotCatchUp() {
@@ -227,5 +256,94 @@ struct SyncControllerTests {
         h.processes.resume([.drive]) // simulate launchd replacing bird
         h.processes.onPausedProcessExit?()
         #expect(h.processes.paused == [.drive])
+    }
+
+    // MARK: Fix round 1
+
+    @Test func sleepCutsCatchUpShortAndNextWakeCatchesUpAgain() {
+        let h = Harness("2026-10-12 14:00")
+        h.settings.lastSyncedAt = TestTime.date("2026-10-11 08:00")
+        h.controller.start(registerHelper: {})
+        #expect(h.controller.status == .catchingUp(until: TestTime.date("2026-10-12 14:30")))
+        h.at("2026-10-12 14:10")
+        h.controller.handleWillSleep()
+        h.at("2026-10-13 15:00")
+        h.controller.handleWake()
+        #expect(h.controller.status == .catchingUp(until: TestTime.date("2026-10-13 15:30")))
+        #expect(h.processes.paused.isEmpty)
+    }
+
+    @Test func catchUpRunningIntoWindowReportsWindowEnd() {
+        let h = Harness("2026-10-12 01:45")
+        h.settings.lastSyncedAt = TestTime.date("2026-10-10 19:45") // 30 h old
+        h.controller.start(registerHelper: {})
+        h.at("2026-10-12 01:50")
+        h.controller.tick()
+        #expect(h.controller.status == .catchingUp(until: TestTime.date("2026-10-12 09:00")))
+        h.at("2026-10-12 02:05")
+        h.controller.tick()
+        #expect(h.controller.status == .syncing(until: TestTime.date("2026-10-12 09:00")))
+    }
+
+    @Test func quitKeepPausedResumesWhenRecordCannotBeWritten() throws {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        #expect(h.processes.paused == [.drive])
+        try h.breakFiles()
+        h.controller.prepareToQuit(keepPaused: true)
+        #expect(h.processes.paused.isEmpty)
+        #expect(h.files.readKeepPaused() == nil)
+        #expect(!h.activity.holding)
+    }
+
+    @Test func failedHeartbeatNeverPauses() throws {
+        let h = Harness("2026-10-12 14:00")
+        try h.breakFiles()
+        h.controller.start(registerHelper: {})
+        #expect(h.processes.paused.isEmpty)
+        #expect(h.controller.status == .helperDisabled)
+    }
+
+    @Test func heartbeatFailureOnTickResumesUntilWritesSucceed() throws {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        #expect(h.processes.paused == [.drive])
+        try h.breakFiles()
+        h.controller.tick()
+        #expect(h.processes.paused.isEmpty)
+        #expect(h.controller.status == .helperDisabled)
+        #expect(!h.activity.holding)
+        try h.repairFiles()
+        h.controller.tick()
+        #expect(h.processes.paused == [.drive])
+    }
+
+    @Test func tickAfterPowerOffDoesNotRepause() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.controller.handlePowerOff()
+        #expect(h.controller.status == .syncing(until: nil))
+        h.controller.tick()
+        h.processes.onPausedProcessExit?()
+        #expect(h.processes.paused.isEmpty)
+        #expect(!h.controller.isPausedNow)
+    }
+
+    @Test func tickAfterQuitResumeDoesNotRepause() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.controller.prepareToQuit(keepPaused: false)
+        h.controller.tick()
+        #expect(h.processes.paused.isEmpty)
+    }
+
+    @Test func quitKeepPausedRefreshesStateFirst() {
+        let h = Harness("2026-10-12 08:59")
+        h.controller.start(registerHelper: {})
+        #expect(!h.controller.isPausedNow)
+        h.at("2026-10-12 09:00") // window just closed, no tick yet
+        h.controller.prepareToQuit(keepPaused: true)
+        #expect(h.processes.paused == [.drive])
+        #expect(h.files.readKeepPaused() == [ProcessIdentity(pid: 100, startTime: 1)])
     }
 }

@@ -23,6 +23,10 @@ public final class SyncController {
     @ObservationIgnored private var catchUpUntil: Date?
     /// Between willSleep and didWake nothing may re-pause (a late tick could fire).
     @ObservationIgnored private var isAsleep = false
+    /// After power-off or Quit nothing may re-pause (a late tick or exit callback could fire).
+    @ObservationIgnored private var isTerminating = false
+    /// Without a fresh heartbeat the watchdog can't protect a pause, so we never pause (spec §5.7).
+    @ObservationIgnored private var isHeartbeatWritten = false
 
     public init(
         settings: AppSettings,
@@ -45,7 +49,7 @@ public final class SyncController {
     /// Launch sequence, spec §5.1.
     public func start(registerHelper: () -> Void) {
         files.deleteKeepPaused()
-        try? files.writeHeartbeat(now())
+        writeHeartbeat()
         processes.resumeAll()
         registerHelper()
         processes.onPausedProcessExit = { [weak self] in self?.apply() }
@@ -60,13 +64,13 @@ public final class SyncController {
 
     /// Every 30 s: heartbeat + re-apply (also re-pauses a respawned process).
     public func tick() {
-        try? files.writeHeartbeat(now())
+        writeHeartbeat()
         apply()
     }
 
     public func handleWake() {
         isAsleep = false
-        try? files.writeHeartbeat(now())
+        writeHeartbeat()
         considerCatchUp()
         apply()
     }
@@ -75,27 +79,36 @@ public final class SyncController {
         isAsleep = true
         processes.resumeAll()
         runningSince = nil
+        catchUpUntil = nil // sleep cuts a catch-up short; the next wake decides afresh
         status = .syncing(until: nil)
         activity.setHolding(false)
     }
 
     public func handlePowerOff() {
+        isTerminating = true
         processes.resumeAll()
+        status = .syncing(until: nil)
         activity.setHolding(false)
     }
 
     /// Quit menu path. `keepPaused` only matters when currently paused.
     public func prepareToQuit(keepPaused: Bool) {
+        apply() // decide on fresh state; must run before the latch below
+        isTerminating = true
+        var keptPaused = false
         if keepPaused, isPausedNow {
-            try? files.writeKeepPaused(processes.pausedProcesses())
-        } else {
+            keptPaused = (try? files.writeKeepPaused(processes.pausedProcesses())) != nil
+        }
+        if !keptPaused {
+            // Never leave targets paused without a keep-paused record.
             processes.resumeAll()
+            status = .syncing(until: nil)
         }
         activity.setHolding(false)
     }
 
     public func apply() {
-        guard !isAsleep else { return }
+        guard !isAsleep, !isTerminating else { return }
         let date = now()
         let cal = calendar()
         let schedule = settings.schedule
@@ -113,10 +126,10 @@ public final class SyncController {
         case .scheduled: wantsRunning = insideWindow || catchUpUntil != nil
         }
         let nextChange: Date? = settings.mode == .scheduled
-            ? [schedule.nextChange(after: date, calendar: cal), catchUpUntil].compactMap { $0 }.min()
+            ? scheduledNextChange(at: date, insideWindow: insideWindow, calendar: cal)
             : nil
 
-        if !wantsRunning, isHelperEnabled() {
+        if !wantsRunning, isHeartbeatWritten, isHelperEnabled() {
             let enabled = settings.enabledTargets
             processes.resume(PauseTarget.allCases.filter { !enabled.contains($0) })
             processes.pause(enabled)
@@ -130,17 +143,38 @@ public final class SyncController {
         if runningSince == nil { runningSince = date }
         if !wantsRunning {
             status = .helperDisabled
-        } else if settings.mode == .scheduled, !insideWindow, let until = catchUpUntil {
-            status = .catchingUp(until: until)
+        } else if settings.mode == .scheduled, !insideWindow, catchUpUntil != nil, let nextChange {
+            status = .catchingUp(until: nextChange)
         } else {
             status = .syncing(until: nextChange)
         }
         activity.setHolding(false)
     }
 
+    /// When the running/paused state will next flip. Inside the window that is the window's end;
+    /// a catch-up that runs into the window lasts until the window closes.
+    private func scheduledNextChange(at date: Date, insideWindow: Bool, calendar cal: Calendar) -> Date {
+        let schedule = settings.schedule
+        let windowChange = schedule.nextChange(after: date, calendar: cal)
+        guard !insideWindow, let until = catchUpUntil else { return windowChange }
+        guard windowChange <= until else { return until }
+        let windowEnd = schedule.nextChange(after: windowChange, calendar: cal)
+        return max(until, windowEnd)
+    }
+
+    private func writeHeartbeat() {
+        do {
+            try files.writeHeartbeat(now())
+            isHeartbeatWritten = true
+        } catch {
+            isHeartbeatWritten = false
+        }
+    }
+
     private func considerCatchUp() {
-        guard settings.mode == .scheduled, catchUpUntil == nil else { return }
         let date = now()
+        if let until = catchUpUntil, date >= until { catchUpUntil = nil }
+        guard settings.mode == .scheduled, catchUpUntil == nil else { return }
         guard !settings.schedule.isInside(date, calendar: calendar()) else { return }
         let last = settings.lastSyncedAt ?? .distantPast
         if date.timeIntervalSince(last) > Self.staleSyncThreshold {
