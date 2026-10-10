@@ -1,0 +1,19 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Core tests
+        run: cd Packages/ShyCloudCore && swift test
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Build app (unsigned)
+        run: |
+          xcodegen generate
+          xcodebuild -project ShyCloud.xcodeproj -scheme ShyCloud -configuration Release \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
