@@ -110,9 +110,42 @@ struct SafetyTests {
         #expect(WatchdogDecision.decide(heartbeat: nil, now: now, keepPaused: ids, isAliveAndStopped: { $0.pid == 42 }) == .resume)
     }
 
+    // MARK: watchdog liveness (spec §5.5/5.7)
+
+    @Test func watchdogRanRoundTrip() throws {
+        try withTempFiles { files in
+            #expect(files.readWatchdogRan() == nil)
+            let date = Date(timeIntervalSince1970: 1_800_000_000.5)
+            try files.writeWatchdogRan(date)
+            #expect(files.readWatchdogRan() == date)
+        }
+    }
+
+    @Test func corruptWatchdogRanIsNil() throws {
+        try withTempFiles { files in
+            for text in ["garbage", "inf", "-inf", "nan", ""] {
+                try writeRaw(text, to: files.watchdogRanURL, in: files)
+                #expect(files.readWatchdogRan() == nil, "\(text)")
+            }
+        }
+    }
+
+    @Test func watchdogAliveWithinWindow() {
+        #expect(WatchdogDecision.isWatchdogAlive(lastRun: now, now: now))
+        #expect(WatchdogDecision.isWatchdogAlive(lastRun: now.addingTimeInterval(-150), now: now))
+        #expect(WatchdogDecision.isWatchdogAlive(lastRun: now.addingTimeInterval(60), now: now))
+    }
+
+    @Test func watchdogNotAliveWhenMissingStaleOrFarFuture() {
+        #expect(!WatchdogDecision.isWatchdogAlive(lastRun: nil, now: now))
+        #expect(!WatchdogDecision.isWatchdogAlive(lastRun: now.addingTimeInterval(-151), now: now))
+        #expect(!WatchdogDecision.isWatchdogAlive(lastRun: now.addingTimeInterval(61), now: now))
+    }
+
     @Test func missingDirectoryReadsNil() {
         let files = tempFiles()
         #expect(files.readHeartbeat() == nil)
         #expect(files.readKeepPaused() == nil)
+        #expect(files.readWatchdogRan() == nil)
     }
 }

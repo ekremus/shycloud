@@ -32,3 +32,5 @@ Useful commands:
 | 20 | Update check | Settings › Check for Updates… | Sparkle dialog appears (feed may 404 before first release) |
 | 21 | Watchdog dry run | Quit ShyCloud (Resume), run `/Applications/ShyCloud.app/Contents/MacOS/ShyCloudWatchdog; echo $?` | `0`; `bird` state `S`/`R`, never `T` |
 | 22 | SIGTERM | Sync Off → `kill -TERM <ShyCloud pid>` | App quits and `bird` is `S`/`R` immediately (no 3-minute wait) |
+| 23 | Moved app | First launch from the DMG, quit (Resume), copy to /Applications and launch from there, Sync Off, then `kill -9 <ShyCloud pid>` | Watchdog resumes `bird` within ~3 min (registration follows the new path) |
+| 24 | Fresh install liveness | `rm ~/Library/Application\ Support/ShyCloud/watchdog-ran`, `defaults delete com.ekremus.ShyCloud watchdogRegisteredPath`, launch outside the window | Status shows "Safety helper disabled — not pausing" for at most ~30 s until the watchdog's first run, then pauses |

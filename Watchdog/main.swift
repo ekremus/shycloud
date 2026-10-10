@@ -8,6 +8,9 @@ import ShyCloudCore
 let files = SafetyFiles.standard
 let inspector = DarwinProcessInspector()
 
+// Proof of life for the app: SMAppService status alone can be stale (spec §5.5/5.7).
+try? files.writeWatchdogRan(Date())
+
 let action = WatchdogDecision.decide(
     heartbeat: files.readHeartbeat(),
     now: Date(),

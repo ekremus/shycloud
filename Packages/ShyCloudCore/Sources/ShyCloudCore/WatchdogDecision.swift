@@ -10,6 +10,15 @@ public enum WatchdogDecision {
     public static let staleAfter: TimeInterval = 120
     /// A heartbeat further in the future than this is treated as corrupt (stale).
     public static let futureTolerance: TimeInterval = 60
+    /// The watchdog runs every 60 s; two missed runs plus slack means it is not running.
+    public static let watchdogAliveWithin: TimeInterval = 150
+
+    /// `SMAppService.status == .enabled` can be stale; the watchdog's own last run is the real proof (spec §5.5/5.7).
+    public static func isWatchdogAlive(lastRun: Date?, now: Date) -> Bool {
+        guard let lastRun else { return false }
+        let age = now.timeIntervalSince(lastRun)
+        return -futureTolerance <= age && age <= watchdogAliveWithin
+    }
 
     public static func decide(
         heartbeat: Date?,

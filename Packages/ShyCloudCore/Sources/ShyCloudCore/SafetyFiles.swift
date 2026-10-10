@@ -14,18 +14,23 @@ public struct SafetyFiles: Sendable {
 
     var heartbeatURL: URL { directory.appending(path: "heartbeat") }
     var keepPausedURL: URL { directory.appending(path: "keep-paused.json") }
+    var watchdogRanURL: URL { directory.appending(path: "watchdog-ran") }
 
     public func writeHeartbeat(_ date: Date) throws {
-        try ensureDirectory()
-        try Data(String(date.timeIntervalSince1970).utf8).write(to: heartbeatURL, options: .atomic)
+        try writeDate(date, to: heartbeatURL)
     }
 
     public func readHeartbeat() -> Date? {
-        guard let data = try? Data(contentsOf: heartbeatURL),
-              let seconds = Double(String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)),
-              seconds.isFinite
-        else { return nil }
-        return Date(timeIntervalSince1970: seconds)
+        readDate(at: heartbeatURL)
+    }
+
+    /// Written by the watchdog at the start of every run, so the app can tell it is really alive.
+    public func writeWatchdogRan(_ date: Date) throws {
+        try writeDate(date, to: watchdogRanURL)
+    }
+
+    public func readWatchdogRan() -> Date? {
+        readDate(at: watchdogRanURL)
     }
 
     public func writeKeepPaused(_ ids: [ProcessIdentity]) throws {
@@ -40,6 +45,20 @@ public struct SafetyFiles: Sendable {
 
     public func deleteKeepPaused() {
         try? FileManager.default.removeItem(at: keepPausedURL)
+    }
+
+    private func writeDate(_ date: Date, to url: URL) throws {
+        try ensureDirectory()
+        try Data(String(date.timeIntervalSince1970).utf8).write(to: url, options: .atomic)
+    }
+
+    /// Fail-safe: missing, garbage or non-finite contents read as nil.
+    private func readDate(at url: URL) -> Date? {
+        guard let data = try? Data(contentsOf: url),
+              let seconds = Double(String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)),
+              seconds.isFinite
+        else { return nil }
+        return Date(timeIntervalSince1970: seconds)
     }
 
     private func ensureDirectory() throws {

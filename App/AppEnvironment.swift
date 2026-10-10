@@ -28,7 +28,11 @@ final class AppEnvironment {
             processes: SignalProcessController(),
             files: .standard,
             activity: ProcessActivityHolder(),
-            isHelperEnabled: { helper.isEnabled }
+            // Registered is not enough: the watchdog must also have actually run recently.
+            isHelperEnabled: {
+                helper.isEnabled
+                    && WatchdogDecision.isWatchdogAlive(lastRun: SafetyFiles.standard.readWatchdogRan(), now: Date())
+            }
         )
     }
 
