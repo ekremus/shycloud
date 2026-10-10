@@ -90,7 +90,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yeniden başlattığınızda veya oturumu kapattığınızda iCloud kendiliğinden açılır."
+            "value": "Yeniden başlattığınızda veya oturumu kapattığınızda iCloud kendiliğinden devam eder."
           }
         }
       }
@@ -100,7 +100,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud senkronize ediliyor"
+            "value": "iCloud senkron açık"
           }
         }
       }
@@ -230,7 +230,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud'u Aç"
+            "value": "iCloud'u Sürdür"
           }
         }
       }
@@ -420,7 +420,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Duraklatılmışken yalnızca iCloud'da duran dosyalar (Finder'da bulut simgeli) senkron açılana kadar açılamaz."
+            "value": "Duraklatılmışken yalnızca iCloud'da duran dosyalar (Finder'da bulut simgeli) senkron devam edene kadar açılamaz."
           }
         }
       }
