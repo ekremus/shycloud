@@ -12,4 +12,4 @@ ShyCloud is distributed under GPL-3.0-or-later. **By submitting a contribution y
 - Manual checks: `docs/TESTING.md`
 
 ## Translations
-Add a language in `App/Localizable.xcstrings` (Xcode's String Catalog editor) and add it to `CFBundleLocalizations` in `project.yml`.
+The app UI is English only for now. Strings live in `App/Localizable.xcstrings`, so a language can be added later if the maintainer decides to; please open an issue first.

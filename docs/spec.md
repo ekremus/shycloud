@@ -22,11 +22,11 @@ A free, open-source macOS menu bar app that keeps iCloud Drive sync paused while
 
 Exactly one mode is active, persisted across launches.
 
-| Mode (id) | Menu label EN / TR | Behaviour |
+| Mode (id) | Menu label | Behaviour |
 |---|---|---|
-| `alwaysSync` | `Sync On` / `Senkron Açık` | Targets always running |
-| `alwaysPause` | `Sync Off` / `Senkron Kapalı` | Targets always paused (vacation/sleep mode) |
-| `scheduled` | `Scheduled (02:00–09:00)` / `Zamanlı (02:00–09:00)` | Running inside the window, paused outside. **Default.** |
+| `alwaysSync` | `Sync On` | Targets always running |
+| `alwaysPause` | `Sync Off` | Targets always paused (vacation/sleep mode) |
+| `scheduled` | `Scheduled (02:00–09:00)` | Running inside the window, paused outside. **Default.** |
 
 - Window = one daily start and end time (hour + minute), same every day. End earlier than start means it crosses midnight. Start == end is invalid; Settings prevents it.
 - Times are displayed in the user's locale format.
@@ -94,7 +94,7 @@ Single app target + one embedded LaunchAgent helper (both arm64). Units, each wi
 | `PauseTarget` (enum) | `.cloudKit`, `.drive`, `.photoAnalysis`. Each has display name, risk text, and an **allowlist of absolute executable paths**: `bird` → `/System/Library/PrivateFrameworks/iCloudDriveCore.framework/Versions/A/Support/bird` (verified on 27.0.1) and `/System/Library/PrivateFrameworks/CloudDocsDaemon.framework/Versions/A/Support/bird` (older layout); `cloudd` → `/System/Library/PrivateFrameworks/CloudKitDaemon.framework/Support/cloudd`; `photoanalysisd` → `/System/Library/PrivateFrameworks/PhotoAnalysis.framework/Versions/A/Support/photoanalysisd`. **Never match by name.** (This Mac runs Simulator copies of cloudd/photoanalysisd as the same uid under `/Library/Developer/CoreSimulator/...` — they must never be touched.) Pause order: drive, photoAnalysis, cloudKit; resume order: reverse. |
 | `ProcessInspector` (protocol) + `DarwinProcessInspector` | `pids(for target) -> [ProcessID]`: `proc_listallpids` → for each pid, `proc_pidpath` equals an allowlisted path **and** owner uid (`proc_pidinfo PROC_PIDTBSDINFO pbi_uid`) == `getuid()`. `isStopped(pid) -> Bool`: `pbi_status == SSTOP`. `startTime(pid)` for identity. |
 | `ProcessController` (protocol) + `SignalProcessController` | `pause(_ targets:)`, `resume(_ targets:)`, `resumeAll()`. Re-verifies path+uid immediately before each `kill(pid, SIGSTOP/SIGCONT)`. Returns the set of `(pid, startTime)` it stopped. Watches each paused pid with a `DispatchSource.makeProcessSource(.exit)`; on exit it asks `SyncController` to re-apply (catches respawn instantly). This is the only unit that touches other processes. |
-| `Settings` | UserDefaults-backed: mode, start, end, enabled optional targets, showInMenuBar, lastSyncWindowCompletedAt. Validation. |
+| `Settings` | UserDefaults-backed: mode, start, end, enabled optional targets, showInMenuBar, lastSyncedAt. Validation. |
 | `SafetyFiles` | Paths under `~/Library/Application Support/ShyCloud/`: `heartbeat` (Unix timestamp text, written every 30 s) and `keep-paused.json` (list of `{pid, startTime}`). |
 | `SyncController` (`@MainActor @Observable`) | Combines mode + schedule into desired state; applies via `ProcessController` (idempotently, every time); re-applies on: settings change, wake (`NSWorkspace.shared.notificationCenter` `.didWakeNotification`), `.NSSystemClockDidChange`, `.NSSystemTimeZoneDidChange`, `.NSCalendarDayChanged` (all on `NotificationCenter.default`), process exit events, and a 30 s tick that also writes the heartbeat (state changes therefore take effect within ≤ 30 s of a window boundary). Resumes all on `.willSleepNotification` and `.willPowerOffNotification` (workspace center). While anything is paused holds `ProcessInfo.processInfo.beginActivity(options: .userInitiatedAllowingIdleSystemSleep, reason:)` so App Nap can't stall the heartbeat. Refuses to pause if watchdog status ≠ `.enabled`. |
 | `ShyCloudWatchdog` (tiny CLI target) | Plist at `Contents/Library/LaunchAgents/com.ekremus.ShyCloud.Watchdog.plist` with `BundleProgram` = `Contents/MacOS/ShyCloudWatchdog`, `StartInterval` 60, registered via `SMAppService.agent(plistName:)` on every launch regardless of "Open at login". Each run: if heartbeat ≤ 120 s old → exit. Else if `keep-paused.json` exists and every listed `{pid, startTime}` is still alive and stopped → exit. Else delete `keep-paused.json` and SIGCONT every allowlisted target process of this uid → exit. Worst-case recovery ≈ 3 min. |
