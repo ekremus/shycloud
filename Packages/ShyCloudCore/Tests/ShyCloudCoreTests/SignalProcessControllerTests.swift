@@ -143,6 +143,64 @@ struct SignalProcessControllerTests {
         #expect(calls == 1)
     }
 
+    // MARK: breathing (deep pause)
+
+    @Test func breathReleasesInResumeOrderAndRestopsInPauseOrder() {
+        let (controller, inspector, signaler) = make()
+        controller.pause(PauseTarget.allCases)
+        signaler.sent.removeAll()
+        controller.releaseForBreath()
+        #expect(signaler.sent.map { $0.0 } == [SIGCONT, SIGCONT, SIGCONT])
+        #expect(signaler.sent.map { $0.1 } == [30, 20, 10])
+        #expect(inspector.stopped.isEmpty)
+        signaler.sent.removeAll()
+        controller.restopAfterBreath()
+        #expect(signaler.sent.map { $0.0 } == [SIGSTOP, SIGSTOP, SIGSTOP])
+        #expect(signaler.sent.map { $0.1 } == [10, 20, 30])
+        #expect(controller.pausedProcesses() == [bird, photo, cloudd])
+    }
+
+    @Test func breathKeepsProcessesTrackedSoAFullResumeStillContinuesThem() {
+        let (controller, inspector, _) = make()
+        controller.pause([.drive])
+        controller.releaseForBreath()
+        controller.restopAfterBreath()
+        controller.resume([.drive])
+        #expect(inspector.stopped.isEmpty)
+        #expect(controller.pausedProcesses().isEmpty)
+    }
+
+    @Test func breathOnlyTouchesProcessesShyCloudPaused() {
+        let (controller, inspector, signaler) = make()
+        controller.pause([.drive])
+        let respawned = ProcessIdentity(pid: 11, startTime: 2)
+        inspector.table[respawned] = .drive // not paused yet: the next apply picks it up
+        signaler.sent.removeAll()
+        controller.releaseForBreath()
+        controller.restopAfterBreath()
+        #expect(signaler.sent.map { $0.1 } == [10, 10])
+    }
+
+    @Test func breathReverifiesBeforeEverySignal() {
+        let (controller, inspector, signaler) = make()
+        controller.pause([.drive, .cloudKit])
+        inspector.revoked = [bird] // pid reused since it was paused
+        signaler.sent.removeAll()
+        controller.releaseForBreath()
+        controller.restopAfterBreath()
+        #expect(signaler.sent.map { $0.1 } == [30, 30])
+    }
+
+    @Test func restopAfterFullResumeDoesNothing() {
+        let (controller, _, signaler) = make()
+        controller.pause([.drive])
+        controller.releaseForBreath()
+        controller.resumeAll()
+        signaler.sent.removeAll()
+        controller.restopAfterBreath()
+        #expect(signaler.sent.isEmpty)
+    }
+
     @Test func signalerRejectsNonPositivePids() {
         #expect(DarwinSignaler().send(0, to: 0) == false)
         #expect(DarwinSignaler().send(0, to: -1) == false)

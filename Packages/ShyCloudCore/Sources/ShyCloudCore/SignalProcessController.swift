@@ -60,6 +60,26 @@ public final class SignalProcessController: ProcessControlling {
         }
     }
 
+    public func releaseForBreath() {
+        signalTracked(SIGCONT, in: PauseTarget.resumeOrder)
+    }
+
+    public func restopAfterBreath() {
+        signalTracked(SIGSTOP, in: PauseTarget.pauseOrder)
+    }
+
+    /// Breaths touch only processes ShyCloud paused (no process-table scan every 2 s), still in
+    /// pause/resume order and re-verified right before each signal. A respawned target is picked
+    /// up by the next `pause` (exit watch or tick).
+    private func signalTracked(_ signal: Int32, in order: [PauseTarget]) {
+        let tracked = paused.sorted { $0.pid < $1.pid }
+        for target in order {
+            for id in tracked where inspector.target(of: id) == target {
+                _ = signaler.send(signal, to: id.pid)
+            }
+        }
+    }
+
     /// Processes ShyCloud paused that are still alive and stopped.
     public func pausedProcesses() -> [ProcessIdentity] {
         paused.filter { inspector.isStopped($0) }.sorted { $0.pid < $1.pid }

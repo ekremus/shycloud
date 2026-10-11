@@ -6,6 +6,8 @@ import Testing
 final class FakeProcesses: ProcessControlling {
     var onPausedProcessExit: (@MainActor () -> Void)?
     private(set) var paused: Set<PauseTarget>
+    /// Paused targets running for a breath (still owned by ShyCloud).
+    private(set) var released: Set<PauseTarget> = []
     /// One entry per non-empty call, e.g. "resume drive,photoAnalysis,cloudKit" (pause order).
     private(set) var log: [String] = []
 
@@ -20,7 +22,21 @@ final class FakeProcesses: ProcessControlling {
 
     func resume(_ targets: [PauseTarget]) {
         paused.subtract(targets)
+        released.subtract(targets)
         record("resume", targets)
+    }
+
+    func releaseForBreath() {
+        released.formUnion(paused)
+        paused.removeAll()
+        record("release", Array(released))
+    }
+
+    func restopAfterBreath() {
+        let targets = Array(released)
+        paused.formUnion(released)
+        released.removeAll()
+        record("restop", targets)
     }
 
     private func record(_ action: String, _ targets: [PauseTarget]) {
