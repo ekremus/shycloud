@@ -6,3 +6,7 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 dist/
+
+# iCloud conflict copies ("name 2.ext")
+* [2-9].*
+* [2-9]
