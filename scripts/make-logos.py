@@ -24,6 +24,8 @@ SIZES = [1024, 512, 256, 128, 64, 32, 16]
 # Glyphs used in the menu bar (see StatusText.iconName)
 MENU = ["online", "pause", "stop"]
 MENU_HEIGHT_PT = 16
+# Glyph size inside the 16 pt menu bar slot (the full slot looked too heavy next to system icons)
+MENU_GLYPH_SCALE = 0.85
 
 tmp = pathlib.Path(tempfile.mkdtemp())
 HEADER = '<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000" fill="none">\n'
@@ -149,7 +151,10 @@ boxes = [alpha_bbox(SVG / f"{n}.svg") for n in MENU]
 left, top = min(b[0] for b in boxes), min(b[1] for b in boxes)
 right, bottom = max(b[2] for b in boxes), max(b[3] for b in boxes)
 pad = 4
-menu_box = (left - pad, top - pad, right - left + 2 * pad, bottom - top + 2 * pad)
+w, h = right - left + 2 * pad, bottom - top + 2 * pad
+cx, cy = (left + right) / 2, (top + bottom) / 2
+w, h = w / MENU_GLYPH_SCALE, h / MENU_GLYPH_SCALE
+menu_box = (cx - w / 2, cy - h / 2, w, h)
 menu_w_pt = round(MENU_HEIGHT_PT * menu_box[2] / menu_box[3])
 for old in ASSETS.glob("MenuBar*.imageset"):
     for f in old.iterdir():
