@@ -2,6 +2,8 @@
 
 [English](README.md)
 
+> ⭐ **ShyCloud işinize yaradıysa [GitHub'da yıldız verin](https://github.com/ekremus/shycloud)** — ücretsiz, ve diğer Mac kullanıcıları onu yıldızlar sayesinde buluyor.
+
 **ShyCloud**, çalışırken **iCloud Drive senkronunu duraklatan** ve yalnızca seçtiğiniz saatlerde — varsayılan **02:00–09:00** — çalıştıran ücretsiz, açık kaynaklı bir menü çubuğu uygulamasıdır. Gün içinde `bird`'ün işlemciyi ve diski yemesine, Finder takılmalarına, git ve Xcode'un iCloud'la kavga etmesine son.
 
 - ☁️ **Zamanlı senkron** — iCloud Drive yalnızca belirlediğiniz saatlerde senkronlanır
@@ -57,3 +59,7 @@ Hiçbir veri toplanmaz. Tek ağ erişimi Sparkle güncelleme denetimidir.
 GPL-3.0-or-later — sonsuza kadar ücretsiz; dağıtılan her sürüm açık kaynak kalmak zorundadır. Katkılar MIT lisansıyla kabul edilir ([CONTRIBUTING.md](CONTRIBUTING.md)).
 
 Apple ile bağlantılı değildir. iCloud, Apple Inc.'in ticari markasıdır.
+
+---
+
+⭐ ShyCloud'u beğendiyseniz [yıldız verin](https://github.com/ekremus/shycloud) — daha çok kişinin bulmasına yardımcı olur.

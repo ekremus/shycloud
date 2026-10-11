@@ -2,6 +2,8 @@
 
 [Türkçe](README.tr.md)
 
+> ⭐ **If ShyCloud saves your day, please [star it on GitHub](https://github.com/ekremus/shycloud)** — it's free, and stars are how other Mac users find it.
+
 **ShyCloud** is a free, open-source menu bar app that keeps **iCloud Drive sync paused while you work** and lets it run only in a time window you choose — by default **02:00–09:00**. No more `bird` eating CPU and disk I/O, no more Finder stalls, no more git and Xcode fighting iCloud in the middle of your day.
 
 - ☁️ **Scheduled sync** — iCloud Drive syncs only inside your daily window
@@ -77,3 +79,7 @@ If your checkout is in an iCloud-synced folder (Desktop/Documents), pass `-deriv
 GPL-3.0-or-later — free forever; any redistributed version must stay open source. Contributions are accepted under the MIT license (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 Not affiliated with Apple. iCloud is a trademark of Apple Inc.
+
+---
+
+⭐ Like ShyCloud? [Give it a star](https://github.com/ekremus/shycloud) — it helps more people find it.
