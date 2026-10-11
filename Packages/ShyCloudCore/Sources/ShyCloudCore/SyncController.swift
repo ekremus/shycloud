@@ -115,7 +115,7 @@ public final class SyncController {
     public func handleWillSleep() {
         isAsleep = true
         endThawSilently()
-        probeTimer.cancel() // the timeout would fire on wake although targets ran during sleep
+        probeTimer.cancel() // needed: a wake within the timeout would otherwise let it fire although targets ran during sleep
         resumeEverything()
         runningSince = nil
         status = .syncing(until: nil)
@@ -133,7 +133,6 @@ public final class SyncController {
     public func prepareToQuit() {
         isTerminating = true
         endThawSilently()
-        probeTimer.cancel()
         resumeEverything()
         status = .syncing(until: nil)
         activity.setHolding(false)
@@ -183,7 +182,8 @@ public final class SyncController {
             } else {
                 let enabled = settings.enabledTargets
                 processes.resume(PauseTarget.allCases.filter { !enabled.contains($0) })
-                processes.pause(enabled)
+                // During a release window the breather re-stops at its end; pausing now would cut the breath short.
+                if !breather.isReleased { processes.pause(enabled) }
                 breather.start()
             }
             runningSince = nil
@@ -246,7 +246,8 @@ public final class SyncController {
     }
 
     private func probeTimedOut() {
-        guard isProbeInFlight, !isAsleep, !isTerminating else { return }
+        // Only a hang while the targets are really held (frozen and breathing) says iCloud stopped answering.
+        guard isProbeInFlight, breather.isRunning, !isThawing, !isAsleep, !isTerminating else { return }
         cooldownStartedAt = now()
         apply()
     }

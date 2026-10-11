@@ -7,7 +7,7 @@
 - ☁️ **Scheduled sync** — iCloud Drive syncs only inside your daily window
 - ⏸ **Sync Off** — vacation / travel / hotspot mode, fully paused
 - ▶️ **Sync On** — normal iCloud, one click
-- 🛟 **Safety first** — iCloud resumes on quit, sleep, logout and crashes (built-in safety helper), and apps never hang waiting for it
+- 🛟 **Safety first** — iCloud resumes on quit, sleep, logout and crashes (built-in safety helper), and apps never hang for more than a couple of seconds waiting for it
 - 🫥 **Hideable** — remove the menu bar icon; it keeps working in the background
 - 🍎 Apple Silicon · macOS 26+ · English · no tracking, no account
 

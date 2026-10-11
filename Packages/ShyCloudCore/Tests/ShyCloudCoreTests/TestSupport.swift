@@ -42,6 +42,11 @@ final class FakeClock {
         return timer
     }
 
+    /// Deadline of the pending timer created with `leeway` (unique per use in SyncController).
+    func deadline(leeway: TimeInterval) -> Date? {
+        timers.first { $0.leeway == leeway }?.deadline
+    }
+
     func advance(by seconds: TimeInterval) {
         let end = now.addingTimeInterval(seconds)
         while let next = timers

@@ -101,7 +101,7 @@ struct BreatherTests {
 
 @MainActor
 struct DispatchOneShotTimerTests {
-    @Test func firesOnceOnMain() async {
+    @Test(.timeLimit(.minutes(1))) func firesOnceOnMain() async {
         let timer = DispatchOneShotTimer(leeway: 0.001)
         var fired = 0
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
@@ -114,7 +114,7 @@ struct DispatchOneShotTimerTests {
         #expect(fired == 1)
     }
 
-    @Test func cancelAndRescheduleReplacePendingFire() async {
+    @Test(.timeLimit(.minutes(1))) func cancelAndRescheduleReplacePendingFire() async {
         let timer = DispatchOneShotTimer(leeway: 0.001)
         var log: [String] = []
         timer.schedule(after: 0.01) { log.append("first") }

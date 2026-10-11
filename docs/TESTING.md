@@ -34,9 +34,9 @@ While paused, `bird` is breathing: `T` most of the time, `S`/`R` for 0.2 s every
 | 17 | Logout | Sync Off → log out → log in | `bird` running fresh; ShyCloud relaunches and pauses again |
 | 18 | Cloud-only file | Sync Off → open a Finder file with cloud icon | App waits; choosing Sync On lets it open |
 | 20 | Update check | Settings › Check for Updates… | Sparkle dialog appears (feed may 404 before first release) |
-| 21 | Watchdog dry run | Quit ShyCloud (Resume), run `/Applications/ShyCloud.app/Contents/MacOS/ShyCloudWatchdog; echo $?` | `0`; `bird` state `S`/`R`, never `T` |
+| 21 | Watchdog dry run | Quit ShyCloud, run `/Applications/ShyCloud.app/Contents/MacOS/ShyCloudWatchdog; echo $?` | `0`; `bird` state `S`/`R`, never `T` |
 | 22 | SIGTERM | Sync Off → `kill -TERM <ShyCloud pid>` | App quits and `bird` is `S`/`R` immediately (no 3-minute wait) |
-| 23 | Moved app | First launch from the DMG, quit (Resume), copy to /Applications and launch from there, Sync Off, then `kill -9 <ShyCloud pid>` | Watchdog resumes `bird` within ~3 min (registration follows the new path) |
+| 23 | Moved app | First launch from the DMG, quit, copy to /Applications and launch from there, Sync Off, then `kill -9 <ShyCloud pid>` | Watchdog resumes `bird` within ~3 min (registration follows the new path) |
 | 24 | Fresh install liveness | `rm ~/Library/Application\ Support/ShyCloud/watchdog-ran`, `defaults delete com.ekremus.ShyCloud watchdogRegisteredPath`, launch outside the window | Status shows "ShyCloud — Syncing" (nothing paused) until the watchdog's first run, then pauses |
 | 25 | App launch while paused | Sync Off, wait 1 min, then launch GeForce NOW and Steam (Chromium/CEF apps) | Both open normally, no beachball; `bird` runs for ~10 s after each launch, then breathes again |
 | 26 | Responsiveness while paused | Sync Off, wait 1 min, run `swift scripts/ubiquity-probe.swift` a few times | Every run prints a latency under 3 s; never `HANG` |

@@ -113,6 +113,16 @@ final class Harness {
 
     func at(_ text: String) { date = TestTime.date(text) }
 
+    /// Invariant: whenever targets are stopped, the next breath starts within `Breather.breathInterval`.
+    func expectNextBreathWithinTwoSeconds(_ note: String = "", sourceLocation: SourceLocation = #_sourceLocation) {
+        guard !processes.paused.isEmpty else { return }
+        let next = clock.deadline(leeway: Breather.timerLeeway)
+        #expect(next != nil, "stopped targets without a pending breath \(note)", sourceLocation: sourceLocation)
+        if let next {
+            #expect(next <= date.addingTimeInterval(Breather.breathInterval), "breath too late \(note)", sourceLocation: sourceLocation)
+        }
+    }
+
     /// Replaces the safety directory with a regular file so every write fails.
     func breakFiles() throws {
         try? FileManager.default.removeItem(at: files.directory)
@@ -463,6 +473,101 @@ struct SyncControllerTests {
         }
     }
 
+    @Test func tickInsideTheReleaseWindowDoesNotCutTheBreathShort() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.advance(1.9) // released since 1.8 s
+        #expect(h.processes.released == [.drive])
+        let mark = h.processes.log.count
+        h.controller.tick()
+        #expect(h.processes.released == [.drive]) // still breathing
+        #expect(h.processes.paused.isEmpty)
+        #expect(!h.log(since: mark).contains { $0.hasPrefix("pause") }) // never re-paused mid-breath
+        h.advance(0.11) // 2.0 s: the breather re-stops
+        #expect(h.processes.paused == [.drive])
+        h.advance(1.77) // 3.78 s: next release is 2.0 s after the previous one (3.8 s)
+        #expect(h.processes.released.isEmpty)
+        h.advance(0.03)
+        #expect(h.processes.released == [.drive])
+    }
+
+    @Test func unticksAnOptionalTargetMidBreath() {
+        let h = Harness("2026-10-12 14:00")
+        h.settings.pauseCloudKit = true
+        h.controller.start(registerHelper: {})
+        h.advance(1.85)
+        #expect(h.processes.released == [.drive, .cloudKit])
+        h.settings.pauseCloudKit = false
+        #expect(h.processes.released == [.drive]) // cloudKit resumed for good
+        #expect(h.processes.paused.isEmpty)
+        h.advance(0.15)
+        #expect(h.processes.paused == [.drive])
+        h.expectNextBreathWithinTwoSeconds()
+    }
+
+    @Test func ticksAnOptionalTargetMidBreath() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.advance(1.85)
+        h.settings.pauseCloudKit = true
+        #expect(h.processes.released == [.drive]) // breath not cut short
+        #expect(h.processes.paused.isEmpty)
+        h.advance(0.15)
+        #expect(h.processes.paused == [.drive])
+        h.controller.tick() // picked up by the next tick
+        #expect(h.processes.paused == [.drive, .cloudKit])
+        h.expectNextBreathWithinTwoSeconds()
+    }
+
+    @Test func launchThawStartingMidBreath() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.advance(1.85)
+        h.controller.handleAppLaunch()
+        #expect(h.processes.paused.isEmpty)
+        #expect(h.processes.released.isEmpty)
+        let mark = h.processes.log.count
+        h.advance(9.9)
+        #expect(h.log(since: mark).isEmpty) // the old re-stop never fires
+        #expect(h.processes.paused.isEmpty)
+        h.advance(0.2)
+        #expect(h.processes.paused == [.drive])
+        h.expectNextBreathWithinTwoSeconds()
+    }
+
+    @Test func stoppedTargetsAlwaysBreatheWithinTwoSecondsAfterMixedEvents() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        let steps: [(String, () -> Void)] = [
+            ("tick", { h.controller.tick() }),
+            ("tick in release", { h.advance(1.85); h.controller.tick() }),
+            ("tick optional", { h.settings.pauseCloudKit = true }),
+            ("settle", { h.advance(0.2); h.controller.tick() }),
+            ("launch", { h.controller.handleAppLaunch() }),
+            ("launch extends", { h.advance(4); h.controller.handleAppLaunch() }),
+            ("thaw ends", { h.advance(10.1) }),
+            ("untick optional", { h.advance(1.7); h.settings.pauseCloudKit = false }),
+            ("sleep", { h.controller.handleWillSleep() }),
+            ("wake", { h.advance(5); h.controller.handleWake() }),
+            ("sync on", { h.settings.mode = .alwaysSync }),
+            ("sync off", { h.advance(3); h.settings.mode = .alwaysPause }),
+            ("probe answered", { h.probe.answer(); h.advance(0.5); h.controller.tick() }),
+            ("long", { h.advance(7.3) })
+        ]
+        for (name, step) in steps {
+            step()
+            h.probe.answer() // iCloud keeps answering: no cooldown in this scenario
+            h.expectNextBreathWithinTwoSeconds("after \(name)")
+            // and again at a few offsets: the invariant holds between events too
+            for _ in 0..<5 {
+                h.advance(0.37)
+                h.probe.answer()
+                h.expectNextBreathWithinTwoSeconds("after \(name) + drift")
+            }
+        }
+        #expect(h.controller.isPausedNow)
+    }
+
     // MARK: Deep pause: launch thaw
 
     @Test func appLaunchThawsForTenSecondsThenPausesAgain() {
@@ -656,13 +761,40 @@ struct SyncControllerTests {
     @Test func sleepCancelsAPendingProbeTimeout() {
         let h = Harness("2026-10-12 14:00")
         h.controller.start(registerHelper: {})
-        h.controller.tick()
+        h.controller.tick() // timeout would fire 3 s after the tick
         h.advance(1)
         h.controller.handleWillSleep()
-        h.advance(5)
-        h.controller.handleWake()
-        #expect(h.processes.paused == [.drive])
+        h.advance(0.5)
+        h.controller.handleWake() // awake and breathing again before the old deadline
+        h.advance(3) // past the old deadline
+        #expect(h.controller.status == .paused(until: TestTime.date("2026-10-13 02:00")))
         #expect(h.controller.isPausedNow)
+        #expect(h.processes.paused == [.drive] || h.processes.released == [.drive])
+    }
+
+    @Test func probeTimeoutDuringLaunchThawIsNoCooldown() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.controller.tick()
+        h.advance(1)
+        h.controller.handleAppLaunch() // targets run: a hanging probe proves nothing
+        h.advance(2.5) // the probe deadline passes inside the thaw
+        #expect(h.controller.status == .paused(until: TestTime.date("2026-10-13 02:00")))
+        h.advance(10) // thaw over
+        #expect(h.processes.paused == [.drive])
+        #expect(h.controller.status == .paused(until: TestTime.date("2026-10-13 02:00")))
+    }
+
+    @Test func probeTimeoutAfterSwitchingToSyncOnIsNoCooldown() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.controller.tick()
+        h.advance(1)
+        h.settings.mode = .alwaysSync
+        h.advance(3) // the deadline passes while syncing
+        h.settings.mode = .alwaysPause
+        #expect(h.controller.status == .paused(until: nil))
+        #expect(h.processes.paused == [.drive])
     }
 
     @Test func clockSetBackEndsCooldown() {

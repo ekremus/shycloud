@@ -7,7 +7,7 @@
 - ☁️ **Zamanlı senkron** — iCloud Drive yalnızca belirlediğiniz saatlerde senkronlanır
 - ⏸ **Senkron Kapalı** — tatil / seyahat / mobil internet modu
 - ▶️ **Senkron Açık** — normal iCloud, tek tık
-- 🛟 **Önce güvenlik** — çıkışta, uykuda, oturum kapatınca ve çökmede iCloud geri açılır; uygulamalar iCloud'u beklerken asla takılmaz
+- 🛟 **Önce güvenlik** — çıkışta, uykuda, oturum kapatınca ve çökmede iCloud geri açılır; uygulamalar iCloud'u beklerken en fazla birkaç saniye bekler, asla kilitlenmez
 - 🫥 **Gizlenebilir** — menü ikonunu kaldırın, arka planda çalışmaya devam eder
 - 🍎 Apple Silicon · macOS 26+ · uygulama arayüzü İngilizce (README Türkçe de mevcut) · takip yok, hesap yok
 
