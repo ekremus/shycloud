@@ -39,8 +39,10 @@ struct AboutView: View {
                 .padding(.top, 16)
 
             HStack(spacing: 16) {
-                Button(String(localized: "GitHub")) {
+                Button {
                     NSWorkspace.shared.open(Self.repoURL)
+                } label: {
+                    Label("Star on GitHub", systemImage: "star")
                 }
                 if let noticesURL = Self.noticesURL {
                     Button(String(localized: "Third-Party Licenses")) {
