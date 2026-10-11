@@ -19,7 +19,7 @@ Why: iCloud Drive can use a lot of CPU and disk while it syncs big folders like 
 ## Features
 
 - **Scheduled:** iCloud Drive syncs only in your daily window.
-- **Sync Off:** iCloud stays paused until you turn it back on. Good for travel or a phone hotspot.
+- **Sync Off:** iCloud stays paused until you turn it back on.
 - **Sync On:** normal iCloud.
 - **Safe:** iCloud comes back when you quit shyCloud, when the Mac sleeps or logs out, and if shyCloud crashes.
 - **Apps keep working:** an app that asks iCloud something waits 2 seconds at most.
@@ -42,7 +42,7 @@ A fully stopped `bird` makes some apps freeze. Steam, GeForce NOW and other Chro
 - When you open an app, iCloud runs normally for 10 seconds.
 - Every 30 seconds shyCloud checks that iCloud answers within 3 seconds. If it does not, iCloud runs normally for 10 minutes.
 
-During a deep pause iCloud does very little work. In our tests it moved about 350 KB in 20 minutes instead of 500 MB. The full results are in [docs/pause-method-study-2026-10-11.md](docs/pause-method-study-2026-10-11.md).
+During a deep pause the iCloud Drive process uses about a third of its normal CPU time in our tests, so it stops competing with your work. It does not stop all network use. New files can still upload, because the transfer itself runs in a separate system process. The full results are in [docs/pause-method-study-2026-10-11.md](docs/pause-method-study-2026-10-11.md).
 
 Safety rules:
 
