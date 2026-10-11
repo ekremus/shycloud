@@ -3,6 +3,16 @@ import ShyCloudCore
 
 /// All user-visible status/mode strings, localized.
 enum StatusText {
+    /// Template image in Assets.xcassets for the status: logo while syncing, pause bars on a scheduled
+    /// pause, crossed-out cloud while sync is off until the user turns it back on.
+    static func iconName(_ status: SyncStatus) -> String {
+        switch status {
+        case .paused(nil): "MenuBarOffline"
+        case .paused: "MenuBarPause"
+        case .syncing, .waitingForHelper, .helperDisabled: "MenuBarShy"
+        }
+    }
+
     static func time(_ date: Date) -> String {
         date.formatted(date: .omitted, time: .shortened)
     }
@@ -16,15 +26,15 @@ enum StatusText {
         switch status {
         case .syncing(nil), .waitingForHelper:
             // The safety helper is invisible in the UI: while it starts, iCloud is syncing.
-            String(localized: "ShyCloud — Syncing")
+            String(localized: "shyCloud — Syncing")
         case .syncing(let until?):
-            String(localized: "ShyCloud — Syncing · pauses at \(time(until))")
+            String(localized: "shyCloud — Syncing · pauses at \(time(until))")
         case .paused(nil):
-            String(localized: "ShyCloud — Paused")
+            String(localized: "shyCloud — Paused")
         case .paused(let until?):
-            String(localized: "ShyCloud — Paused · syncs at \(time(until))")
+            String(localized: "shyCloud — Paused · syncs at \(time(until))")
         case .helperDisabled:
-            String(localized: "ShyCloud — Can't pause: allow ShyCloud in Login Items")
+            String(localized: "shyCloud — Can't pause: allow shyCloud in Login Items")
         }
     }
 
@@ -52,7 +62,7 @@ enum StatusText {
         case .syncing(nil), .waitingForHelper:
             String(localized: "Sync is on")
         case .helperDisabled:
-            String(localized: "Allow ShyCloud in System Settings › Login Items")
+            String(localized: "Allow shyCloud in System Settings › Login Items")
         }
     }
 

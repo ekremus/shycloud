@@ -23,6 +23,7 @@
 		7C65BA8075F89BE2A78EEEC4 /* LoginItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6D768649C79D3102FC27611 /* LoginItem.swift */; };
 		87FB07480D094966BCE3B41A /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = C68546D975F6D2B3F64C83B7 /* AppEnvironment.swift */; };
 		9A84F03EA3A764C53DC99FE3 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A18737AE1935B023AAC2202 /* Updater.swift */; };
+		AB3F5F4A87605F7891D7C907 /* Jaro.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AA4A64219E25DECB420D91A2 /* Jaro.ttf */; };
 		B9D883C97D20B18BA5C41694 /* QuitFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AC2BD382578FD066D7C032E /* QuitFlow.swift */; };
 		BAFA0D0BD690E0E1D62B9BBA /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 573B4F8412F665309A514263 /* Sparkle */; };
 		D5644A4A3BEA86B7A9854E1B /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 8EA632888C72DFEB1399A2E1 /* Localizable.xcstrings */; };
@@ -79,6 +80,7 @@
 		A462CFE8CA75A37143B24213 /* ShyCloudApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShyCloudApp.swift; sourceTree = "<group>"; };
 		A4B358C050559578D7346D0D /* SystemEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemEvents.swift; sourceTree = "<group>"; };
 		A9B89E0531C5ED583EFDFA2B /* AboutWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutWindowController.swift; sourceTree = "<group>"; };
+		AA4A64219E25DECB420D91A2 /* Jaro.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Jaro.ttf; sourceTree = "<group>"; };
 		B129DA590AFD1AF909E9D0F4 /* SafetyHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyHelper.swift; sourceTree = "<group>"; };
 		B2D4FE45FE7441B564BB9E57 /* LICENSE */ = {isa = PBXFileReference; path = LICENSE; sourceTree = "<group>"; };
 		C5520F252E10DBCE53578406 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -131,6 +133,14 @@
 			);
 			sourceTree = "<group>";
 		};
+		8E9F670B46F4E3466C78CFE9 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				AA4A64219E25DECB420D91A2 /* Jaro.ttf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
 		9B2B3FC543289235374A9520 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -159,6 +169,7 @@
 				5F3B13EC003CD786D207EC22 /* StatusText.swift */,
 				A4B358C050559578D7346D0D /* SystemEvents.swift */,
 				0A18737AE1935B023AAC2202 /* Updater.swift */,
+				8E9F670B46F4E3466C78CFE9 /* Fonts */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -268,6 +279,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				557851C12276ED731FAC6B7C /* Assets.xcassets in Resources */,
+				AB3F5F4A87605F7891D7C907 /* Jaro.ttf in Resources */,
 				5DC358CDD95FD83E41404D31 /* LICENSE in Resources */,
 				D5644A4A3BEA86B7A9854E1B /* Localizable.xcstrings in Resources */,
 			);

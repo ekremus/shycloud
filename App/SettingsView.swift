@@ -70,7 +70,7 @@ struct SettingsView: View {
                 Toggle(isOn: $settings.showInMenuBar) {
                     Text("Show in menu bar")
                     if !settings.showInMenuBar {
-                        Text("Open ShyCloud again from Applications to return here.")
+                        Text("Open shyCloud again from Applications to return here.")
                     }
                 }
                 Toggle(String(localized: "Automatically check for updates"), isOn: Binding(
@@ -121,9 +121,11 @@ private struct StatusHeader: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: status.isPaused ? "icloud.slash" : "icloud")
-                .font(.system(size: 28))
-                .symbolRenderingMode(.hierarchical)
+            Image(StatusText.iconName(status))
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 28)
                 .foregroundStyle(status.isPaused ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.accentColor))
                 .frame(width: 40)
                 .accessibilityHidden(true)
