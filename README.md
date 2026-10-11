@@ -7,7 +7,7 @@
 <p align="center">Pause iCloud Drive sync on your Mac while you work. Let it sync at night.</p>
 
 <p align="center">
-  <a href="https://github.com/ekremus/shycloud/releases/latest">Download</a> ·
+  <a href="#install">Download</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="https://github.com/ekremus/shycloud">⭐ Star on GitHub</a>
 </p>
