@@ -16,14 +16,13 @@ struct AboutView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Image(nsImage: NSApp.applicationIconImage)
+            Image("Logo")
                 .resizable()
-                .frame(width: 96, height: 96)
+                .frame(width: 128, height: 100)
                 .accessibilityHidden(true)
 
             Text(verbatim: "ShyCloud")
-                .font(.title2)
-                .fontWeight(.semibold)
+                .font(.custom("Jaro", size: 30, relativeTo: .title2))
                 .padding(.top, 12)
 
             Text("Version \(version) (build \(build))")

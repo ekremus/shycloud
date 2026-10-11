@@ -121,9 +121,11 @@ private struct StatusHeader: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: status.isPaused ? "icloud.slash" : "icloud")
-                .font(.system(size: 28))
-                .symbolRenderingMode(.hierarchical)
+            Image(StatusText.iconName(status))
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 28)
                 .foregroundStyle(status.isPaused ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.accentColor))
                 .frame(width: 40)
                 .accessibilityHidden(true)

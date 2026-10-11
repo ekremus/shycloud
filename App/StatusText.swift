@@ -3,6 +3,16 @@ import ShyCloudCore
 
 /// All user-visible status/mode strings, localized.
 enum StatusText {
+    /// Template image in Assets.xcassets for the status: logo while syncing, pause bars on a scheduled
+    /// pause, crossed-out cloud while sync is off until the user turns it back on.
+    static func iconName(_ status: SyncStatus) -> String {
+        switch status {
+        case .paused(nil): "MenuBarOffline"
+        case .paused: "MenuBarPause"
+        case .syncing, .waitingForHelper, .helperDisabled: "MenuBarShy"
+        }
+    }
+
     static func time(_ date: Date) -> String {
         date.formatted(date: .omitted, time: .shortened)
     }

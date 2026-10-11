@@ -63,6 +63,7 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleLocalizations: [en]
         LSUIElement: true
+        ATSApplicationFontsPath: "."
         LSApplicationCategoryType: public.app-category.utilities
         LSMinimumSystemVersion: "26.0"
         NSHumanReadableCopyright: "© 2026 ekremus · GPL-3.0-or-later"

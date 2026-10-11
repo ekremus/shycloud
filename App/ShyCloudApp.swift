@@ -20,7 +20,7 @@ private struct MenuBarIcon: View {
     let sync: SyncController
 
     var body: some View {
-        Image(systemName: sync.isPausedNow ? "icloud.slash" : "icloud")
+        Image(StatusText.iconName(sync.status))
             .accessibilityLabel(sync.isPausedNow ? String(localized: "iCloud paused") : String(localized: "iCloud syncing"))
     }
 }
