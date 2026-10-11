@@ -26,7 +26,7 @@ Why: iCloud Drive can use a lot of CPU and disk while it syncs big folders like 
 - **Hideable:** you can remove the menu bar icon. shyCloud keeps running.
 - **Private:** no account, no tracking.
 
-Requires macOS 26 or later on Apple Silicon.
+Requires macOS 26 or later on Apple Silicon. Tested on macOS 27.0.1 (MacBook Pro M4 Pro). Not yet tested on macOS 26.
 
 ## Install
 
