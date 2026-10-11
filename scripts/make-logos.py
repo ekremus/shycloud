@@ -100,16 +100,16 @@ for f, k in (("Logo.png", 1), ("Logo@2x.png", 2)):
                     "--default-background-color=00000000", f"--window-size={w},{h}",
                     f"--screenshot={folder / f}", page.as_uri()], check=True, capture_output=True)
 
-# App icon: colour mark on a light rounded tile, on Apple's 1024 grid (824 tile, 100 inset)
+# App icon: assets/logo/svg/app-icon.svg (blue tile, white cloud, blue lettering) on Apple's 1024 grid
 icon_dir = ASSETS / "AppIcon.appiconset"
 for old in icon_dir.glob("*.png"):
     old.unlink()
 icon_page = tmp / "icon.html"
-icon_page.write_text(f"""<html><body style="margin:0;background:transparent">
-<div style="position:absolute;left:100px;top:100px;width:824px;height:824px;border-radius:185px;overflow:hidden;
-  background:linear-gradient(180deg,#ffffff,#e4f1ff);box-shadow:0 10px 22px rgba(0,0,0,.22)">
-<img src="{(SVG / 'colour.svg').as_uri()}" style="position:absolute;left:62px;top:62px;width:700px;height:700px;
-  filter:drop-shadow(0 18px 22px rgba(0,70,190,.25))"></div></body></html>""")
+icon_page.write_text(f'<html><body style="margin:0;background:transparent">'
+                     f'<div style="position:absolute;left:100px;top:100px;width:824px;height:824px;border-radius:185px;'
+                     f'box-shadow:0 10px 22px rgba(0,0,0,.22)"></div>'
+                     f'<img src="{(SVG / "app-icon.svg").as_uri()}" width="1024" height="1024" '
+                     f'style="position:absolute;left:0;top:0"></body></html>')
 master = tmp / "icon-1024.png"
 subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--force-device-scale-factor=1",
                 "--default-background-color=00000000", "--window-size=1024,1024", f"--screenshot={master}",
@@ -142,7 +142,7 @@ body {{ margin:0; width:1280px; height:640px; overflow:hidden; position:relative
 .puff {{ position:absolute; opacity:.55; filter:blur(2px); }}
 .wrap {{ position:absolute; inset:0; display:flex; align-items:center; gap:64px; padding:0 104px; }}
 .logo {{ width:380px; height:380px; flex:none; filter:drop-shadow(0 24px 34px rgba(0,70,190,.28)); }}
-h1 {{ margin:0; font-family:Jaro; font-size:150px; font-weight:400; letter-spacing:0; line-height:.9;
+h1 {{ margin:0; font-family:Jaro; font-size:150px; font-weight:400; letter-spacing:0; line-height:1.1; padding-bottom:.08em; margin-bottom:-.12em;
   background:linear-gradient(180deg,#0b1d33,#16365c); -webkit-background-clip:text; color:transparent; }}
 p {{ margin:22px 0 34px; font-size:38px; line-height:1.22; color:#38536e; font-weight:500; max-width:600px; }}
 .chips {{ display:flex; gap:12px; flex-wrap:wrap; }}
@@ -153,7 +153,7 @@ p {{ margin:22px 0 34px; font-size:38px; line-height:1.22; color:#38536e; font-w
 <img class="puff" src="{puff}" style="width:420px;left:-120px;bottom:-150px;opacity:.7">
 <img class="puff" src="{puff}" style="width:300px;right:-60px;top:-110px">
 <div class="wrap"><img class="logo" src="{logo}">
-<div><h1>ShyCloud</h1><p>Pause iCloud Drive sync<br>on your Mac, on a schedule.</p>
+<div><h1>shyCloud</h1><p>Pause iCloud Drive sync<br>on your Mac, on a schedule.</p>
 <div class="chips"><span class="chip">Free &amp; open source</span><span class="chip">Apple Silicon</span>
 <span class="chip">No tracking</span></div></div></div>
 <div class="url">github.com/ekremus/shycloud</div>

@@ -12,7 +12,7 @@ final class SettingsWindowController {
             let hosting = NSHostingController(rootView: SettingsView(environment: .shared))
             hosting.sizingOptions = [.preferredContentSize]
             let window = NSWindow(contentViewController: hosting)
-            window.title = String(localized: "ShyCloud Settings")
+            window.title = String(localized: "shyCloud Settings")
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
             window.center()

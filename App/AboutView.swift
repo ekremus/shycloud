@@ -21,7 +21,7 @@ struct AboutView: View {
                 .frame(width: 128, height: 100)
                 .accessibilityHidden(true)
 
-            Text(verbatim: "ShyCloud")
+            Text(verbatim: "shyCloud")
                 .font(.custom("Jaro", size: 30, relativeTo: .title2))
                 .padding(.top, 12)
 

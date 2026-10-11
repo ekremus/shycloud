@@ -70,7 +70,7 @@ struct SettingsView: View {
                 Toggle(isOn: $settings.showInMenuBar) {
                     Text("Show in menu bar")
                     if !settings.showInMenuBar {
-                        Text("Open ShyCloud again from Applications to return here.")
+                        Text("Open shyCloud again from Applications to return here.")
                     }
                 }
                 Toggle(String(localized: "Automatically check for updates"), isOn: Binding(

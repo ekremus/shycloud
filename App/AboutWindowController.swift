@@ -21,7 +21,7 @@ final class AboutWindowController {
             )
             window.contentViewController = hosting
             window.setContentSize(Self.size)
-            window.title = String(localized: "About ShyCloud")
+            window.title = String(localized: "About shyCloud")
             window.titlebarAppearsTransparent = true
             window.titleVisibility = .hidden
             window.isMovableByWindowBackground = true
