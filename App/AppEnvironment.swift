@@ -15,6 +15,8 @@ final class AppEnvironment {
         processes: SignalProcessController(),
         files: .standard,
         activity: ProcessActivityHolder(),
+        probe: UbiquityProbe(),
+        makeTimer: { DispatchOneShotTimer(leeway: $0) },
         // Registered is not enough: the watchdog must also have actually run recently.
         helperState: { [unowned self] in self.helperState }
     )

@@ -15,6 +15,12 @@ enum SystemEvents {
         workspace.addObserver(forName: NSWorkspace.willPowerOffNotification, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { sync.handlePowerOff() }
         }
+        // Launch thaw: apps that talk to iCloud at launch must never meet a frozen bird.
+        for name in [NSWorkspace.willLaunchApplicationNotification, NSWorkspace.didLaunchApplicationNotification] {
+            workspace.addObserver(forName: name, object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated { sync.handleAppLaunch() }
+            }
+        }
         let center = NotificationCenter.default
         for name in [Notification.Name.NSSystemClockDidChange, .NSSystemTimeZoneDidChange, .NSCalendarDayChanged] {
             center.addObserver(forName: name, object: nil, queue: .main) { _ in
