@@ -7,7 +7,7 @@
 - ☁️ **Zamanlı senkron** — iCloud Drive yalnızca belirlediğiniz saatlerde senkronlanır
 - ⏸ **Senkron Kapalı** — tatil / seyahat / mobil internet modu
 - ▶️ **Senkron Açık** — normal iCloud, tek tık
-- 🛟 **Önce güvenlik** — çıkışta (Duraklatılmış Kalsın seçilmedikçe), uykuda, oturum kapatınca ve çökmede iCloud geri açılır
+- 🛟 **Önce güvenlik** — çıkışta, uykuda, oturum kapatınca ve çökmede iCloud geri açılır; uygulamalar iCloud'u beklerken asla takılmaz
 - 🫥 **Gizlenebilir** — menü ikonunu kaldırın, arka planda çalışmaya devam eder
 - 🍎 Apple Silicon · macOS 26+ · uygulama arayüzü İngilizce (README Türkçe de mevcut) · takip yok, hesap yok
 
@@ -18,7 +18,15 @@
 
 ## Nasıl çalışır
 
-macOS'ta iCloud Drive'ı duraklatmak için resmi bir düğme yok. ShyCloud, iCloud Drive işlemi `bird`'ü `kill -STOP` / `kill -CONT` ile dondurur ve çözer — güvenli ve otomatik biçimde:
+macOS'ta iCloud Drive'ı duraklatmak için resmi bir düğme yok. ShyCloud, iCloud Drive işlemi `bird`'ü `kill -STOP` / `kill -CONT` ile dondurur ve çözer — güvenli ve otomatik biçimde.
+
+Tamamen dondurulmuş `bird`'ün bir sorunu var: açılışta iCloud'a bir şey soran uygulamalar (Steam, GeForce NOW ve diğer Chromium tabanlı uygulamalar) sonsuza kadar cevap bekler. Bu yüzden ShyCloud **derin duraklatma** kullanır:
+
+- iCloud dondurulur ve **her 2 saniyede bir kısa bir an (0,2 sn) serbest bırakılır**; böylece iCloud'a bir şey soran uygulamalar takılmak yerine en geç 2 saniye civarında cevap alır. Bu yüzden duraklatılmışken iCloud yok denecek kadar az da olsa iş yapar.
+- Bir **uygulama açtığınızda** iCloud 10 saniye normal çalışır.
+- ShyCloud her 30 saniyede iCloud'un 3 saniye içinde cevap verdiğini kontrol eder. Vermezse 10 dakika normal çalışmasına izin verir, sonra tekrar dener.
+
+Ve her zaman:
 
 - Yalnızca **sizin** işlemlerinize, **tam sistem yoluyla** eşleşerek dokunur (asla isimle değil — iOS Simülatörü kopyalarına dokunmaz).
 - Her işlemi sinyal göndermeden hemen önce yeniden doğrular.
@@ -33,7 +41,7 @@ macOS'ta iCloud Drive'ı duraklatmak için resmi bir düğme yok. ShyCloud, iClo
 
 ## Kaldırma
 
-1. Menüden ShyCloud'dan çıkın ve **iCloud'u Sürdür**'ü seçin.
+1. Menüden ShyCloud'dan çıkın (iCloud hemen devam eder).
 2. ShyCloud'u Uygulamalar klasöründen silin.
 
 Ya da Homebrew ile: `brew uninstall --cask --zap shycloud`.

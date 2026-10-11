@@ -7,7 +7,7 @@
 - ☁️ **Scheduled sync** — iCloud Drive syncs only inside your daily window
 - ⏸ **Sync Off** — vacation / travel / hotspot mode, fully paused
 - ▶️ **Sync On** — normal iCloud, one click
-- 🛟 **Safety first** — iCloud resumes on quit (unless you choose Keep Paused), sleep, logout and crashes (built-in safety helper)
+- 🛟 **Safety first** — iCloud resumes on quit, sleep, logout and crashes (built-in safety helper), and apps never hang waiting for it
 - 🫥 **Hideable** — remove the menu bar icon; it keeps working in the background
 - 🍎 Apple Silicon · macOS 26+ · English · no tracking, no account
 
@@ -20,7 +20,15 @@
 
 ## How it works
 
-macOS has no public switch to pause iCloud Drive. ShyCloud does what power users do in Terminal — `kill -STOP` / `kill -CONT` on the iCloud Drive daemon `bird` — but safely and automatically:
+macOS has no public switch to pause iCloud Drive. ShyCloud does what power users do in Terminal — `kill -STOP` / `kill -CONT` on the iCloud Drive daemon `bird` — but safely and automatically.
+
+A fully frozen `bird` has one catch: apps that ask iCloud something at launch (Steam, GeForce NOW and other Chromium-based apps) wait for an answer forever. So ShyCloud uses a **deep pause**:
+
+- iCloud is frozen, and **released for a moment every 2 seconds** (0.2 s), so apps that ask it something get an answer within about 2 seconds instead of hanging. While paused, iCloud therefore does a small trickle of work, not none.
+- When you **open an app**, iCloud runs normally for 10 seconds.
+- Every 30 seconds ShyCloud checks that iCloud still answers within 3 seconds. If it doesn't, ShyCloud lets it run normally for 10 minutes before trying again.
+
+And always:
 
 - It only touches processes owned by **you**, matched by **exact system path** (never by name — iOS Simulator copies are never touched).
 - It re-checks every process right before signalling it.
@@ -37,7 +45,7 @@ Optional extras in Settings: pause **Photo analysis** (`photoanalysisd`) and, un
 
 ## Uninstall
 
-1. Quit ShyCloud from the menu and choose **Resume iCloud**.
+1. Quit ShyCloud from the menu (iCloud resumes right away).
 2. Delete ShyCloud from Applications.
 
 Or with Homebrew: `brew uninstall --cask --zap shycloud`.

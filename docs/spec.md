@@ -1,6 +1,6 @@
 # ShyCloud — Design Spec
 
-**Date:** 2026-10-10 · **Revision:** 2 (after independent review) · **Status:** Approved by owner (ekremus)
+**Date:** 2026-10-10 · **Revision:** 3 (deep pause, 2026-10-11) · **Status:** Approved by owner (ekremus)
 **One-liner:** Pause iCloud Drive sync on Mac, on a schedule.
 **Research:** see [research.md](research.md)
 
@@ -49,14 +49,12 @@ Last synced: today 08:59                  (disabled)
   Quit ShyCloud    ⌘Q
 ```
 
-Status line variants: `Syncing`, `Syncing · pauses at 09:00`, `Paused`, `Paused · syncs at 02:00`, `Can't pause: allow ShyCloud in Login Items` (watchdog agent disabled). The safety helper is invisible in the UI: while it is still starting, the line reads `Syncing` like any other syncing state.
+Status line variants: `Syncing`, `Syncing · pauses at 09:00`, `Paused`, `Paused · syncs at 02:00`, `Can't pause: allow ShyCloud in Login Items` (watchdog agent disabled). The safety helper is invisible in the UI: while it is still starting, the line reads `Syncing` like any other syncing state. During a health-check cooldown (§4.1) the status is plain syncing: `Syncing · pauses at <cooldown end>` (or `Syncing` when the sync window opens first). A launch thaw (§4.1) does not change the status.
 Icon (SF Symbols, template rendering): running → `icloud`; paused → `icloud.slash`.
 
 ### 3.2 Quit
-- Only the **Quit ShyCloud menu item** may ask. If iCloud is currently paused, it calls `NSApp.activate()` then shows an `NSAlert`: title "Keep iCloud paused after quitting?", info "iCloud resumes automatically when you restart or log out.", buttons **Resume iCloud** (default, Return), **Keep Paused** and **Cancel** (Escape; does nothing, the app keeps running with no state change).
-- If iCloud is syncing, Quit exits immediately.
-- Every other termination path (logout, shutdown, restart, Sparkle relaunch, `SIGTERM`) resumes all targets without asking (`applicationWillTerminate` + `NSWorkspace.willPowerOffNotification`).
-- "Keep Paused" writes the keep-paused flag (§5) and exits without resuming.
+- **Quit ShyCloud** always resumes all targets and exits. No alert, no "Keep Paused": a frozen `bird` with nobody letting it breathe (§4.1) would hang any app that makes a synchronous call to it.
+- Every other termination path (logout, shutdown, restart, Sparkle relaunch, `SIGTERM`) resumes all targets too (`applicationWillTerminate` + `NSWorkspace.willPowerOffNotification`).
 
 ### 3.3 Settings (single small window)
 Implemented as an AppKit `NSWindow` hosting the SwiftUI `SettingsView` (`SettingsWindowController.shared.show()`), so it can be opened from the menu and from `applicationShouldHandleReopen` alike; `show()` deminiaturizes if needed, activates the app forcefully (`NSRunningApplication.current.activate(options: [.activateAllWindows])`), then `makeKeyAndOrderFront` + `orderFrontRegardless` so an already-open window comes to front for an accessory app.
@@ -100,23 +98,35 @@ Single app target + one embedded LaunchAgent helper (both arm64). Units, each wi
 | `Schedule` (pure value type) | `init(start: DateComponents, end: DateComponents)`; `isInside(_ date: Date, calendar: Calendar) -> Bool`; `nextChange(after: Date, calendar: Calendar) -> Date`. Uses `calendar.nextDate(after:matching:matchingPolicy: .nextTime, repeatedTimePolicy: .first, direction: .forward)` so DST gaps/repeats behave. |
 | `PauseTarget` (enum) | `.cloudKit`, `.drive`, `.photoAnalysis`. Each has display name, risk text, and an **allowlist of absolute executable paths**: `bird` → `/System/Library/PrivateFrameworks/iCloudDriveCore.framework/Versions/A/Support/bird` (verified on 27.0.1) and `/System/Library/PrivateFrameworks/CloudDocsDaemon.framework/Versions/A/Support/bird` (older layout); `cloudd` → `/System/Library/PrivateFrameworks/CloudKitDaemon.framework/Support/cloudd`; `photoanalysisd` → `/System/Library/PrivateFrameworks/PhotoAnalysis.framework/Versions/A/Support/photoanalysisd`. **Never match by name.** (This Mac runs Simulator copies of cloudd/photoanalysisd as the same uid under `/Library/Developer/CoreSimulator/...` — they must never be touched.) Pause order: drive, photoAnalysis, cloudKit; resume order: reverse. |
 | `ProcessInspector` (protocol) + `DarwinProcessInspector` | `pids(for target) -> [ProcessID]`: `proc_listallpids` → for each pid, `proc_pidpath` equals an allowlisted path **and** owner uid (`proc_pidinfo PROC_PIDTBSDINFO pbi_uid`) == `getuid()`. `isStopped(pid) -> Bool`: `pbi_status == SSTOP`. `startTime(pid)` for identity. |
-| `ProcessController` (protocol) + `SignalProcessController` | `pause(_ targets:)`, `resume(_ targets:)`, `resumeAll()`. Re-verifies path+uid immediately before each `kill(pid, SIGSTOP/SIGCONT)`. Returns the set of `(pid, startTime)` it stopped. Watches each paused pid with a `DispatchSource.makeProcessSource(.exit)`; on exit it asks `SyncController` to re-apply (catches respawn instantly). This is the only unit that touches other processes. |
+| `ProcessController` (protocol) + `SignalProcessController` | `pause(_ targets:)`, `resume(_ targets:)`, `resumeAll()`, and for breathing `releaseForBreath()` / `restopAfterBreath()` (SIGCONT/SIGSTOP only the processes it paused, no process-table scan, same pause/resume order). Re-verifies path+uid+start time immediately before each `kill(pid, SIGSTOP/SIGCONT)`. Watches each paused pid with a `DispatchSource.makeProcessSource(.exit)`; on exit it asks `SyncController` to re-apply (catches respawn instantly). This is the only unit that touches other processes. |
+| `Breather` | Deep pause cycle (§4.1): while running, every `breathInterval` = 2.0 s it releases the paused targets for `breathDuration` = 0.2 s, then stops them again. Driven by an injectable `OneShotTimer` (`DispatchOneShotTimer`: one `DispatchSourceTimer` on main, 20 ms leeway). |
+| `ResponsivenessProbe` (protocol) + `UbiquityProbe` | `ping(answered:)`: calls `FileManager.default.ubiquityIdentityToken` on a background queue and reports back on main when it returns (never, if `bird` hangs). |
 | `Settings` | UserDefaults-backed: mode, start, end, enabled optional targets, showInMenuBar, lastSyncedAt. Validation. |
-| `SafetyFiles` | Paths under `~/Library/Application Support/ShyCloud/`: `heartbeat` (Unix timestamp text, written every 30 s) and `keep-paused.json` (list of `{pid, startTime}`). |
-| `SyncController` (`@MainActor @Observable`) | Combines mode + schedule into desired state; applies via `ProcessController` (idempotently, every time); re-applies on: settings change, wake (`NSWorkspace.shared.notificationCenter` `.didWakeNotification`), `.NSSystemClockDidChange`, `.NSSystemTimeZoneDidChange`, `.NSCalendarDayChanged` (all on `NotificationCenter.default`), process exit events, and a 30 s tick that also writes the heartbeat (state changes therefore take effect within ≤ 30 s of a window boundary). Resumes all on `.willSleepNotification` and `.willPowerOffNotification` (workspace center). While anything is paused holds `ProcessInfo.processInfo.beginActivity(options: .userInitiatedAllowingIdleSystemSleep, reason:)` so App Nap can't stall the heartbeat. Refuses to pause if watchdog status ≠ `.enabled`. |
-| `ShyCloudWatchdog` (tiny CLI target) | Plist at `Contents/Library/LaunchAgents/com.ekremus.ShyCloud.Watchdog.plist` with `BundleProgram` = `Contents/MacOS/ShyCloudWatchdog`, `StartInterval` 60, registered via `SMAppService.agent(plistName:)` on every launch regardless of "Open at login". Each run: if heartbeat ≤ 120 s old → exit. Else if `keep-paused.json` exists and every listed `{pid, startTime}` is still alive and stopped → exit. Else delete `keep-paused.json` and SIGCONT every allowlisted target process of this uid → exit. Worst-case recovery ≈ 3 min. |
-| UI | `ShyCloudApp` (scenes), `MenuContent`, `SettingsView`, quit alert, `AppDelegate` (reopen, terminate). |
+| `SafetyFiles` | Paths under `~/Library/Application Support/ShyCloud/`: `heartbeat` (Unix timestamp text, written every 30 s) and `watchdog-ran` (written by each watchdog run). |
+| `SyncController` (`@MainActor @Observable`) | Combines mode + schedule into desired state; applies via `ProcessController` (idempotently, every time); pausing means a deep pause (§4.1). Re-applies on: settings change, wake (`NSWorkspace.shared.notificationCenter` `.didWakeNotification`), `.NSSystemClockDidChange`, `.NSSystemTimeZoneDidChange`, `.NSCalendarDayChanged` (all on `NotificationCenter.default`), process exit events, and a 30 s tick that also writes the heartbeat and runs the health check (state changes therefore take effect within ≤ 30 s of a window boundary). `handleAppLaunch()` on `.willLaunchApplicationNotification` / `.didLaunchApplicationNotification` (workspace center). Resumes all and stops breathing on `.willSleepNotification`, `.willPowerOffNotification` (workspace center) and quit. While anything is paused holds `ProcessInfo.processInfo.beginActivity(options: .userInitiatedAllowingIdleSystemSleep, reason:)` so App Nap can't stall the heartbeat or the breaths. Refuses to pause if watchdog status ≠ `.enabled`. |
+| `ShyCloudWatchdog` (tiny CLI target) | Plist at `Contents/Library/LaunchAgents/com.ekremus.ShyCloud.Watchdog.plist` with `BundleProgram` = `Contents/MacOS/ShyCloudWatchdog`, `StartInterval` 60, registered via `SMAppService.agent(plistName:)` on every launch regardless of "Open at login". Each run: write `watchdog-ran`; if heartbeat ≤ 120 s old → exit; else SIGCONT every allowlisted target process of this uid → exit. Covers a crash at any moment, including mid-breath. Worst-case recovery ≈ 3 min. |
+| UI | `ShyCloudApp` (scenes), `MenuContent`, `SettingsView`, `AboutView`, `AppDelegate` (reopen, terminate). |
+
+### 4.1 Pause method: deep pause
+
+Measured on macOS 27 (60 s runs): SIGSTOP on `bird` makes any app that does a synchronous XPC call to it hang for as long as it stays stopped, e.g. `FileManager.default.ubiquityIdentityToken`, which Chromium/CEF apps (GeForce NOW, Steam) call at launch. Alternatives measured: background QoS (`PRIO_DARWIN_BG`) also hangs when `bird` has a backlog (no priority donation); `nice` never pauses sync. Chosen: **breathing**, which measured 1.0–1.8 s per call and about 18 % of normal `bird` work.
+
+- **Breathing:** while paused, targets are stopped, and every 2.0 s (release to release) all paused targets run for 0.2 s, then are stopped again (`Breather`). Targets are never left stopped without the breather running; every way out (`resumeEverything`) stops the breather first.
+- **Launch thaw:** on every app launch notification, all targets run for `launchThawDuration` = 10 s (another launch extends it), then go back to paused + breathing. Event-driven, no polling. The status stays "paused".
+- **Health check:** on every 30 s tick while paused and breathing, `UbiquityProbe` must answer within `probeTimeout` = 3.0 s (longer than the 2 s breath interval). At most one call is in flight: while the previous call has not returned, no new one starts. On timeout ShyCloud resumes everything and pauses nothing for `cooldownDuration` = 10 min (status: syncing), then tries again. `scripts/ubiquity-probe.swift` runs the same call from Terminal.
+- **Energy:** breath and thaw timers use leeway; nothing polls faster than the breath; breaths signal only already-paused processes (no process-table scan).
 
 ## 5. Safety rules (must hold)
 
-1. **Launch order:** delete `keep-paused.json` → write heartbeat → resume all allowlisted targets → register watchdog → apply desired state.
-2. Resume all on sleep, power-off/logout, and every termination except Quit + "Keep Paused".
+1. **Launch order:** write heartbeat → resume all allowlisted targets → register watchdog → apply desired state.
+2. Resume all (and stop breathing) on sleep, power-off/logout, and every termination including Quit.
 3. Only signal processes whose executable path is in the allowlist and whose uid == `getuid()`. Never match by name.
 4. Re-verify path+uid right before every signal (PID reuse).
-5. Watchdog resumes targets if the heartbeat is stale, unless a valid keep-paused record matches still-stopped processes (a stale record is deleted).
+5. Watchdog resumes targets if the heartbeat is stale.
 6. Unticking a target in Settings resumes it immediately.
 7. If the watchdog is not enabled, ShyCloud never pauses and says so.
 8. No root, no privileged helper, no private frameworks, no network except Sparkle.
+9. A stopped target always breathes (§4.1); apps must never hang on iCloud for longer than about 2 s. If the health check says they do, stop pausing for 10 min.
 
 ## 6. Build & tech
 
@@ -129,15 +139,15 @@ Single app target + one embedded LaunchAgent helper (both arm64). Units, each wi
 
 ## 7. Testing
 
-- **Unit (Swift Testing):** `Schedule` (inside/outside, midnight crossing, exact boundaries, DST spring-forward with start 02:00 in America/New_York, DST fall-back, time-zone change); `SyncController` with fake `ProcessController`/inspector/clock (mode switching, settings changes, wake staying paused after a missed window, launch order, quit paths, refuse-to-pause when watchdog disabled); watchdog decision logic as a pure function `WatchdogDecision.decide(heartbeatAge:keepPaused:liveStopped:) -> .exit | .resume`; `PauseTarget` path allowlist rejects `/Library/Developer/CoreSimulator/...` paths.
-- **Manual checklist (`docs/TESTING.md`)** on real processes: pause → `ps -o stat` shows `T`; resume → `S`/`R`; Simulator `cloudd` untouched; Finder with a dataless file while paused; sleep/wake; logout/login; force-quit → watchdog resumes within ~3 min; Quit + Keep Paused survives watchdog; Quit + Resume; hidden-icon reopen; login item approval flow; safety helper disabled warning.
+- **Unit (Swift Testing):** `Schedule` (inside/outside, midnight crossing, exact boundaries, DST spring-forward with start 02:00 in America/New_York, DST fall-back, time-zone change); `SyncController` with fake `ProcessController`/probe and a virtual clock driving fake timers (mode switching, settings changes, wake staying paused after a missed window, launch order, quit, refuse-to-pause when watchdog disabled, breathing rhythm, launch thaw and its extension, health check timeout → cooldown, one probe in flight); `Breather` cycle; breath signals in `SignalProcessController`; watchdog decision logic as a pure function `WatchdogDecision.decide(heartbeat:now:) -> .exit | .resume`; `PauseTarget` path allowlist rejects `/Library/Developer/CoreSimulator/...` paths. Tests never signal real processes and never call the real probe.
+- **Manual checklist (`docs/TESTING.md`)** on real processes: pause → `ps -o stat` shows `T` (briefly `S`/`R` while breathing); resume → `S`/`R`; Simulator `cloudd` untouched; Finder with a dataless file while paused; Chromium/CEF app launch and `scripts/ubiquity-probe.swift` while paused; git in an iCloud-synced repo while paused; sleep/wake; logout/login; force-quit → watchdog resumes within ~3 min; Quit resumes; hidden-icon reopen; login item approval flow; safety helper disabled warning.
 
 ## 8. Release & discoverability
 
 - GitHub Actions: `swift test` + unsigned build on every push/PR.
 - Release is a local script `scripts/release.sh` (no signing secrets in CI): archive, sign with Developer ID Application (**owner must create this certificate; only an Apple Development cert exists on this Mac, team LQJCF4Z633**), notarize (`notarytool`, keychain profile), staple, DMG (`hdiutil`), Sparkle EdDSA signature + `appcast.xml` committed to `docs/` (served by GitHub Pages), `gh release create`, regenerate the Homebrew cask.
 - Homebrew cask in own tap `ekremus/homebrew-tap` first; submit to homebrew/cask once notability rules are met.
-- README.md (English), first line: "Pause iCloud Drive sync on Mac, on a schedule." Sections: why (iCloud Drive slow / `bird` high CPU), how it works (SIGSTOP/SIGCONT explained honestly, allowlist, safety helper), install (DMG, brew), cloud-only file caveat, FAQ (why not App Store, is it safe, how to undo: quit or reboot), privacy, "Not affiliated with Apple. iCloud is a trademark of Apple Inc.". Screenshot + short GIF. README.tr.md linked at top.
+- README.md (English), first line: "Pause iCloud Drive sync on Mac, on a schedule." Sections: why (iCloud Drive slow / `bird` high CPU), how it works (SIGSTOP/SIGCONT and breathing explained honestly, allowlist, safety helper), install (DMG, brew), cloud-only file caveat, FAQ (why not App Store, is it safe, how to undo: quit or reboot), privacy, "Not affiliated with Apple. iCloud is a trademark of Apple Inc.". Screenshot + short GIF. README.tr.md linked at top.
 - GitHub description + topics: `icloud`, `icloud-drive`, `macos`, `menu-bar-app`, `swift`, `swiftui`, `apple-silicon`, `sync-pause`, `productivity`.
 - Files: LICENSE (GPL-3.0), CONTRIBUTING.md (inbound = MIT), SECURITY.md, CHANGELOG.md, THIRD_PARTY_NOTICES.md (Sparkle).
 
