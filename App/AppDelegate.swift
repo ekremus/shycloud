@@ -5,6 +5,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var sigtermSource: (any DispatchSourceSignal)?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // A second copy must never pause anything: hand over to the running one (it shows Settings) and quit.
+        if let bundleID = Bundle.main.bundleIdentifier {
+            let me = ProcessInfo.processInfo.processIdentifier
+            let others = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+                .filter { $0.processIdentifier != me && !$0.isTerminated }
+            if let other = others.first {
+                other.activate()
+                // Opening the running app again triggers its reopen handler, which shows Settings.
+                if let url = other.bundleURL {
+                    NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+                }
+                exit(0)
+            }
+        }
         // SIGTERM would bypass applicationWillTerminate; route it through terminate (spec §3.2).
         // Installed before start() so a SIGTERM right after the first pause still resumes.
         signal(SIGTERM, SIG_IGN)
