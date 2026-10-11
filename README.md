@@ -1,70 +1,75 @@
-# ShyCloud — Pause iCloud Drive sync on Mac, on a schedule
+<p align="center">
+  <img src="docs/images/logo.svg" width="160" alt="ShyCloud logo">
+</p>
 
-[Türkçe](README.tr.md)
+<h1 align="center">ShyCloud</h1>
 
-> ⭐ **If ShyCloud saves your day, please [star it on GitHub](https://github.com/ekremus/shycloud)** — it's free, and stars are how other Mac users find it.
+<p align="center">Pause iCloud Drive sync on your Mac while you work. Let it sync at night.</p>
 
-**ShyCloud** is a free, open-source menu bar app that keeps **iCloud Drive sync paused while you work** and lets it run only in a time window you choose — by default **02:00–09:00**. No more `bird` eating CPU and disk I/O, no more Finder stalls, no more git and Xcode fighting iCloud in the middle of your day.
+<p align="center">
+  <a href="https://github.com/ekremus/shycloud/releases/latest">Download</a> ·
+  <a href="#how-it-works">How it works</a> ·
+  <a href="https://github.com/ekremus/shycloud">⭐ Star on GitHub</a>
+</p>
 
-- ☁️ **Scheduled sync** — iCloud Drive syncs only inside your daily window
-- ⏸ **Sync Off** — vacation / travel / hotspot mode, fully paused
-- ▶️ **Sync On** — normal iCloud, one click
-- 🛟 **Safety first** — iCloud resumes on quit, sleep, logout and crashes (built-in safety helper), and apps never hang for more than a couple of seconds waiting for it
-- 🫥 **Hideable** — remove the menu bar icon; it keeps working in the background
-- 🍎 Apple Silicon · macOS 26+ · English · no tracking, no account
+ShyCloud is a free menu bar app for Apple Silicon Macs. It keeps iCloud Drive paused during the day and lets it sync in a time window you choose. The default window is 02:00 to 09:00.
 
-<!-- ![ShyCloud menu](docs/images/menu.png) -->
+Why: iCloud Drive can use a lot of CPU and disk while it syncs big folders like code, `node_modules` or video exports. Your Mac gets slow, Finder stalls and git or Xcode can clash with iCloud.
+
+## Features
+
+- **Scheduled:** iCloud Drive syncs only in your daily window.
+- **Sync Off:** iCloud stays paused until you turn it back on. Good for travel or a phone hotspot.
+- **Sync On:** normal iCloud.
+- **Safe:** iCloud comes back when you quit ShyCloud, when the Mac sleeps or logs out, and if ShyCloud crashes.
+- **Apps keep working:** an app that asks iCloud something waits 2 seconds at most.
+- **Hideable:** you can remove the menu bar icon. ShyCloud keeps running.
+- **Private:** no account, no tracking.
+
+Requires macOS 26 or later on Apple Silicon.
 
 ## Install
 
-- **Download:** latest notarized DMG from [Releases](https://github.com/ekremus/shycloud/releases/latest)
-- **Homebrew:** `brew install --cask ekremus/tap/shycloud`
+The first signed release is coming soon. Until then you can [build from source](#build-from-source).
 
 ## How it works
 
-macOS has no public switch to pause iCloud Drive. ShyCloud does what power users do in Terminal — `kill -STOP` / `kill -CONT` on the iCloud Drive daemon `bird` — but safely and automatically.
+macOS has no public way to pause iCloud Drive. ShyCloud stops the iCloud Drive process (`bird`) with the same signal as `kill -STOP`.
 
-A fully frozen `bird` has one catch: apps that ask iCloud something at launch (Steam, GeForce NOW and other Chromium-based apps) wait for an answer forever. So ShyCloud uses a **deep pause**:
+A fully stopped `bird` makes some apps freeze. Steam, GeForce NOW and other Chromium apps ask iCloud a question when they open and wait for the answer. So ShyCloud does a deep pause:
 
-- iCloud is frozen, and **released for a moment every 2 seconds** (0.2 s), so apps that ask it something get an answer within about 2 seconds instead of hanging. While paused, iCloud therefore does a small trickle of work, not none.
-- When you **open an app**, iCloud runs normally for 10 seconds.
-- Every 30 seconds ShyCloud checks that iCloud still answers within 3 seconds. If it doesn't, ShyCloud lets it run normally for 10 minutes before trying again.
+- `bird` is stopped but gets 0.2 seconds to run every 2 seconds. Apps get their answer in under 2 seconds.
+- When you open an app, iCloud runs normally for 10 seconds.
+- Every 30 seconds ShyCloud checks that iCloud answers within 3 seconds. If it does not, iCloud runs normally for 10 minutes.
 
-And always:
+During a deep pause iCloud does very little work. In our tests it moved about 350 KB in 20 minutes instead of 500 MB. The full results are in [docs/pause-method-study-2026-10-11.md](docs/pause-method-study-2026-10-11.md).
 
-- It only touches processes owned by **you**, matched by **exact system path** (never by name — iOS Simulator copies are never touched).
-- It re-checks every process right before signalling it.
-- A tiny **safety helper** (a LaunchAgent) resumes iCloud within ~3 minutes if ShyCloud ever stops unexpectedly.
-- Paused processes are never killed. Nothing is deleted. Reboot or log out and iCloud is back to normal.
+Safety rules:
 
-Optional extras in Settings: pause **Photo analysis** (`photoanalysisd`) and, under Advanced, **CloudKit** (`cloudd` — also pauses Messages, Notes, Reminders sync).
+- ShyCloud only touches your own processes and finds them by their exact system path. It never touches iOS Simulator copies.
+- It checks each process again right before it signals it.
+- A small background helper turns iCloud back on within about 3 minutes if ShyCloud stops unexpectedly.
+- Nothing is killed or deleted. A restart always brings iCloud back to normal.
+
+In Settings you can also pause photo analysis (`photoanalysisd`) and CloudKit (`cloudd`). Pausing CloudKit also pauses Messages, Notes and Reminders sync.
 
 ## Good to know
 
-- **Files that are only in iCloud** (cloud icon in Finder) can't open while sync is paused. Choose **Sync On**, or turn off *Optimize Mac Storage* so files stay downloaded.
-- **Why not on the Mac App Store?** App Store apps run in a sandbox that can't pause other processes.
-- **How do I undo everything?** Choose *Sync On*, or quit ShyCloud, or restart your Mac.
+- **Files stored only in iCloud** (cloud icon in Finder) open after sync resumes. Choose Sync On if you need one now.
+- **Not on the Mac App Store** because App Store apps can't pause other processes.
+- **To undo everything,** choose Sync On, quit ShyCloud or restart your Mac.
+- **Git repos in iCloud folders** can get duplicate files named like `file 2.swift`. iCloud does this on its own. Keep repos outside Desktop and Documents if you can.
 
 ## Uninstall
 
-1. Quit ShyCloud from the menu (iCloud resumes right away).
-2. Delete ShyCloud from Applications.
+1. Quit ShyCloud from its menu. iCloud resumes right away.
+2. Move ShyCloud from Applications to the Trash.
 
-Or with Homebrew: `brew uninstall --cask --zap shycloud`.
-
-The background safety helper is part of the app and goes away with it. You can also switch it off in System Settings › General › Login Items & Extensions.
-
-## FAQ
-
-**Why is iCloud Drive slow on my Mac / why does `bird` use so much CPU?** Large or frequently changing folders (code, `node_modules`, video exports) keep `bird` busy all day. ShyCloud moves that work to the night.
-
-**Is it safe?** It uses the same stop/continue signals as `killall -STOP`, with safeguards. See [How it works](#how-it-works).
-
-**Does it collect data?** No. The only network access is the Sparkle update check.
+The background helper is part of the app and goes away with it.
 
 ## Build from source
 
-Requires Xcode 27 and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+You need Xcode 27 and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
 ```bash
 xcodegen generate
@@ -72,14 +77,12 @@ open ShyCloud.xcodeproj
 cd Packages/ShyCloudCore && swift test
 ```
 
-If your checkout is in an iCloud-synced folder (Desktop/Documents), pass `-derivedDataPath /tmp/shycloud-dd` to xcodebuild.
+If the project is in an iCloud folder (Desktop or Documents), add `-derivedDataPath /tmp/shycloud-dd` to `xcodebuild`.
 
 ## License
 
-GPL-3.0-or-later — free forever; any redistributed version must stay open source. Contributions are accepted under the MIT license (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+GPL-3.0-or-later. ShyCloud is free and any copy you share must stay open source. Contributions are accepted under the MIT license, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Not affiliated with Apple. iCloud is a trademark of Apple Inc.
+ShyCloud is not made by Apple. iCloud is a trademark of Apple Inc.
 
----
-
-⭐ Like ShyCloud? [Give it a star](https://github.com/ekremus/shycloud) — it helps more people find it.
+If ShyCloud helps you, please [star it on GitHub](https://github.com/ekremus/shycloud). It helps other Mac users find it.
