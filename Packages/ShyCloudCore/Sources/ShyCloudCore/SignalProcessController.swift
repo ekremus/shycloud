@@ -60,6 +60,7 @@ public final class SignalProcessController: ProcessControlling {
         }
     }
 
+    /// Processes ShyCloud paused that are still alive and stopped.
     public func pausedProcesses() -> [ProcessIdentity] {
         paused.filter { inspector.isStopped($0) }.sorted { $0.pid < $1.pid }
     }

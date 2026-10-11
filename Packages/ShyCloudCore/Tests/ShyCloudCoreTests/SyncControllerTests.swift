@@ -28,12 +28,6 @@ final class FakeProcesses: ProcessControlling {
         let names = PauseTarget.pauseOrder.filter(targets.contains).map(\.rawValue)
         log.append("\(action) \(names.joined(separator: ","))")
     }
-
-    func pausedProcesses() -> [ProcessIdentity] {
-        PauseTarget.pauseOrder.filter(paused.contains).enumerated().map {
-            ProcessIdentity(pid: Int32(100 + $0.offset), startTime: 1)
-        }
-    }
 }
 
 @MainActor
@@ -180,18 +174,14 @@ struct SyncControllerTests {
         #expect(!h.controller.status.isPaused)
     }
 
-    @Test func launchOrderClearsFlagWritesHeartbeatResumesThenRegisters() throws {
+    @Test func launchOrderWritesHeartbeatResumesThenRegisters() {
         let h = Harness("2026-10-12 14:00", paused: Set(PauseTarget.allCases)) // previous crash
-        try h.files.writeKeepPaused([ProcessIdentity(pid: 1, startTime: 1)])
-        var keepPausedWhenRegistering: [ProcessIdentity]?? = .none
         var heartbeatWhenRegistering: Date?
         var pausedWhenRegistering: Set<PauseTarget>?
         h.controller.start(registerHelper: {
-            keepPausedWhenRegistering = .some(h.files.readKeepPaused())
             heartbeatWhenRegistering = h.files.readHeartbeat()
             pausedWhenRegistering = h.processes.paused
         })
-        #expect(keepPausedWhenRegistering == .some(nil))
         #expect(heartbeatWhenRegistering == h.date)
         #expect(pausedWhenRegistering == [])
         #expect(h.processes.log.first == "resume drive,photoAnalysis,cloudKit")
@@ -262,21 +252,14 @@ struct SyncControllerTests {
         #expect(h.processes.paused.isEmpty)
     }
 
-    @Test func quitKeepPausedWritesRecord() {
+    @Test func quitAlwaysResumes() {
         let h = Harness("2026-10-12 14:00")
         h.controller.start(registerHelper: {})
-        h.controller.prepareToQuit(keepPaused: true)
         #expect(h.processes.paused == [.drive])
-        #expect(h.files.readKeepPaused() == [ProcessIdentity(pid: 100, startTime: 1)])
-        #expect(!h.activity.holding)
-    }
-
-    @Test func quitResumeResumesAndWritesNothing() {
-        let h = Harness("2026-10-12 14:00")
-        h.controller.start(registerHelper: {})
-        h.controller.prepareToQuit(keepPaused: false)
+        h.controller.prepareToQuit()
         #expect(h.processes.paused.isEmpty)
-        #expect(h.files.readKeepPaused() == nil)
+        #expect(h.controller.status == .syncing(until: nil))
+        #expect(!h.activity.holding)
     }
 
     @Test func pausedProcessExitTriggersReapply() {
@@ -288,17 +271,6 @@ struct SyncControllerTests {
     }
 
     // MARK: Fix round 1
-
-    @Test func quitKeepPausedResumesWhenRecordCannotBeWritten() throws {
-        let h = Harness("2026-10-12 14:00")
-        h.controller.start(registerHelper: {})
-        #expect(h.processes.paused == [.drive])
-        try h.breakFiles()
-        h.controller.prepareToQuit(keepPaused: true)
-        #expect(h.processes.paused.isEmpty)
-        #expect(h.files.readKeepPaused() == nil)
-        #expect(!h.activity.holding)
-    }
 
     @Test func failedHeartbeatNeverPauses() throws {
         let h = Harness("2026-10-12 14:00")
@@ -336,19 +308,9 @@ struct SyncControllerTests {
     @Test func tickAfterQuitResumeDoesNotRepause() {
         let h = Harness("2026-10-12 14:00")
         h.controller.start(registerHelper: {})
-        h.controller.prepareToQuit(keepPaused: false)
+        h.controller.prepareToQuit()
         h.controller.tick()
         #expect(h.processes.paused.isEmpty)
-    }
-
-    @Test func quitKeepPausedRefreshesStateFirst() {
-        let h = Harness("2026-10-12 08:59")
-        h.controller.start(registerHelper: {})
-        #expect(!h.controller.isPausedNow)
-        h.at("2026-10-12 09:00") // window just closed, no tick yet
-        h.controller.prepareToQuit(keepPaused: true)
-        #expect(h.processes.paused == [.drive])
-        #expect(h.files.readKeepPaused() == [ProcessIdentity(pid: 100, startTime: 1)])
     }
 
     // MARK: Final review fixes

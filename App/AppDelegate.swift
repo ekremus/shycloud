@@ -21,11 +21,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
-    /// Every termination except Quit + "Keep Paused" resumes iCloud (spec §3.2).
+    /// Every termination resumes iCloud (spec §3.2). Idempotent after the Quit menu item.
     func applicationWillTerminate(_ notification: Notification) {
-        let environment = AppEnvironment.shared
-        if !environment.quitHandled {
-            environment.sync.prepareToQuit(keepPaused: false)
-        }
+        AppEnvironment.shared.sync.prepareToQuit()
     }
 }

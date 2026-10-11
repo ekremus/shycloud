@@ -5,8 +5,6 @@ public protocol ProcessControlling: AnyObject {
     var onPausedProcessExit: (@MainActor () -> Void)? { get set }
     func pause(_ targets: [PauseTarget])
     func resume(_ targets: [PauseTarget])
-    /// Processes ShyCloud paused that are still alive and stopped.
-    func pausedProcesses() -> [ProcessIdentity]
 }
 
 public extension ProcessControlling {

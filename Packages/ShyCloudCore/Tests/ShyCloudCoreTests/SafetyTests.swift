@@ -28,37 +28,16 @@ struct SafetyTests {
         }
     }
 
-    @Test func keepPausedRoundTripAndDelete() throws {
-        try withTempFiles { files in
-        let ids = [ProcessIdentity(pid: 42, startTime: 7)]
-        try files.writeKeepPaused(ids)
-        #expect(files.readKeepPaused() == ids)
-        files.deleteKeepPaused()
-        #expect(files.readKeepPaused() == nil)
-        files.deleteKeepPaused() // deleting twice is fine
-        }
-    }
-
     let now = Date(timeIntervalSince1970: 2_000_000_000)
-    let paused = [ProcessIdentity(pid: 42, startTime: 7)]
 
     @Test func freshHeartbeatExits() {
-        #expect(WatchdogDecision.decide(heartbeat: now.addingTimeInterval(-60), now: now, keepPaused: nil, isAliveAndStopped: { _ in false }) == .exit)
-        #expect(WatchdogDecision.decide(heartbeat: now.addingTimeInterval(-120), now: now, keepPaused: nil, isAliveAndStopped: { _ in false }) == .exit)
+        #expect(WatchdogDecision.decide(heartbeat: now.addingTimeInterval(-60), now: now) == .exit)
+        #expect(WatchdogDecision.decide(heartbeat: now.addingTimeInterval(-120), now: now) == .exit)
     }
 
     @Test func staleHeartbeatResumes() {
-        #expect(WatchdogDecision.decide(heartbeat: now.addingTimeInterval(-121), now: now, keepPaused: nil, isAliveAndStopped: { _ in false }) == .resume)
-        #expect(WatchdogDecision.decide(heartbeat: nil, now: now, keepPaused: nil, isAliveAndStopped: { _ in false }) == .resume)
-    }
-
-    @Test func validKeepPausedRecordIsHonoured() {
-        #expect(WatchdogDecision.decide(heartbeat: nil, now: now, keepPaused: paused, isAliveAndStopped: { _ in true }) == .exit)
-    }
-
-    @Test func staleKeepPausedRecordResumes() {
-        #expect(WatchdogDecision.decide(heartbeat: nil, now: now, keepPaused: paused, isAliveAndStopped: { _ in false }) == .resume)
-        #expect(WatchdogDecision.decide(heartbeat: nil, now: now, keepPaused: [], isAliveAndStopped: { _ in true }) == .resume)
+        #expect(WatchdogDecision.decide(heartbeat: now.addingTimeInterval(-121), now: now) == .resume)
+        #expect(WatchdogDecision.decide(heartbeat: nil, now: now) == .resume)
     }
 
     // MARK: fail-safe (corrupt or doubtful input must lead to resume)
@@ -87,27 +66,11 @@ struct SafetyTests {
     }
 
     @Test func futureHeartbeatResumes() {
-        #expect(WatchdogDecision.decide(heartbeat: now.addingTimeInterval(3600), now: now, keepPaused: nil, isAliveAndStopped: { _ in false }) == .resume)
+        #expect(WatchdogDecision.decide(heartbeat: now.addingTimeInterval(3600), now: now) == .resume)
     }
 
     @Test func slightlyFutureHeartbeatExits() {
-        #expect(WatchdogDecision.decide(heartbeat: now.addingTimeInterval(30), now: now, keepPaused: nil, isAliveAndStopped: { _ in false }) == .exit)
-    }
-
-    @Test func corruptKeepPausedFailsSafeToResume() throws {
-        try withTempFiles { files in
-            for text in ["garbage", "[{\"pid\":42,", "{\"pid\":42}", "[1,2,3]"] {
-                try writeRaw(text, to: files.keepPausedURL, in: files)
-                let read = files.readKeepPaused()
-                #expect(read == nil, "\(text)")
-                #expect(WatchdogDecision.decide(heartbeat: nil, now: now, keepPaused: read, isAliveAndStopped: { _ in true }) == .resume, "\(text)")
-            }
-        }
-    }
-
-    @Test func mixedLivenessResumes() {
-        let ids = [ProcessIdentity(pid: 42, startTime: 7), ProcessIdentity(pid: 43, startTime: 8)]
-        #expect(WatchdogDecision.decide(heartbeat: nil, now: now, keepPaused: ids, isAliveAndStopped: { $0.pid == 42 }) == .resume)
+        #expect(WatchdogDecision.decide(heartbeat: now.addingTimeInterval(30), now: now) == .exit)
     }
 
     // MARK: watchdog liveness (spec §5.5/5.7)
@@ -145,7 +108,6 @@ struct SafetyTests {
     @Test func missingDirectoryReadsNil() {
         let files = tempFiles()
         #expect(files.readHeartbeat() == nil)
-        #expect(files.readKeepPaused() == nil)
         #expect(files.readWatchdogRan() == nil)
     }
 }

@@ -49,7 +49,6 @@ public final class SyncController {
 
     /// Launch sequence, spec §5.1.
     public func start(registerHelper: () -> Void) {
-        files.deleteKeepPaused()
         writeHeartbeat()
         processes.resumeAll()
         registerHelper()
@@ -89,19 +88,11 @@ public final class SyncController {
         activity.setHolding(false)
     }
 
-    /// Quit menu path. `keepPaused` only matters when currently paused.
-    public func prepareToQuit(keepPaused: Bool) {
-        apply() // decide on fresh state; must run before the latch below
+    /// Every termination path: resume everything and never pause again in this process.
+    public func prepareToQuit() {
         isTerminating = true
-        var keptPaused = false
-        if keepPaused, isPausedNow {
-            keptPaused = (try? files.writeKeepPaused(processes.pausedProcesses())) != nil
-        }
-        if !keptPaused {
-            // Never leave targets paused without a keep-paused record.
-            processes.resumeAll()
-            status = .syncing(until: nil)
-        }
+        processes.resumeAll()
+        status = .syncing(until: nil)
         activity.setHolding(false)
     }
 

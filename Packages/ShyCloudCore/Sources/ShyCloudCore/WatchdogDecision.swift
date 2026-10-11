@@ -20,18 +20,11 @@ public enum WatchdogDecision {
         return -futureTolerance <= age && age <= watchdogAliveWithin
     }
 
-    public static func decide(
-        heartbeat: Date?,
-        now: Date,
-        keepPaused: [ProcessIdentity]?,
-        isAliveAndStopped: (ProcessIdentity) -> Bool
-    ) -> WatchdogAction {
+    /// A stale, missing or far-future heartbeat means ShyCloud is not around to keep iCloud breathing: resume.
+    public static func decide(heartbeat: Date?, now: Date) -> WatchdogAction {
         if let heartbeat {
             let age = now.timeIntervalSince(heartbeat)
             if -futureTolerance <= age && age <= staleAfter { return .exit }
-        }
-        if let keepPaused, !keepPaused.isEmpty, keepPaused.allSatisfy(isAliveAndStopped) {
-            return .exit
         }
         return .resume
     }

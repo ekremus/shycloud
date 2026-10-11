@@ -18,7 +18,6 @@ final class AppEnvironment {
         // Registered is not enough: the watchdog must also have actually run recently.
         helperState: { [unowned self] in self.helperState }
     )
-    var quitHandled = false
 
     private var tickTimer: Timer?
     private var started = false

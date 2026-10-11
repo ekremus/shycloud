@@ -13,7 +13,6 @@ public struct SafetyFiles: Sendable {
     }
 
     var heartbeatURL: URL { directory.appending(path: "heartbeat") }
-    var keepPausedURL: URL { directory.appending(path: "keep-paused.json") }
     var watchdogRanURL: URL { directory.appending(path: "watchdog-ran") }
 
     public func writeHeartbeat(_ date: Date) throws {
@@ -31,20 +30,6 @@ public struct SafetyFiles: Sendable {
 
     public func readWatchdogRan() -> Date? {
         readDate(at: watchdogRanURL)
-    }
-
-    public func writeKeepPaused(_ ids: [ProcessIdentity]) throws {
-        try ensureDirectory()
-        try JSONEncoder().encode(ids).write(to: keepPausedURL, options: .atomic)
-    }
-
-    public func readKeepPaused() -> [ProcessIdentity]? {
-        guard let data = try? Data(contentsOf: keepPausedURL) else { return nil }
-        return try? JSONDecoder().decode([ProcessIdentity].self, from: data)
-    }
-
-    public func deleteKeepPaused() {
-        try? FileManager.default.removeItem(at: keepPausedURL)
     }
 
     private func writeDate(_ date: Date, to url: URL) throws {
