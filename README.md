@@ -51,7 +51,7 @@ Safety rules:
 - A small background helper turns iCloud back on within about 3 minutes if shyCloud stops unexpectedly.
 - Nothing is killed or deleted. A restart always brings iCloud back to normal.
 
-In Settings you can also pause photo analysis (`photoanalysisd`) and CloudKit (`cloudd`). Pausing CloudKit also pauses Messages, Notes and Reminders sync.
+In Settings you can also pause iCloud Photos (`cloudphotod`), photo analysis (`photoanalysisd`) and CloudKit (`cloudd`). Pausing CloudKit also pauses Messages, Notes and Reminders sync.
 
 ## Good to know
 

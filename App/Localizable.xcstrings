@@ -18,7 +18,6 @@
     "Open System Settings…": {},
     "Open at login": {},
     "Pause iCloud Drive sync on a schedule.": {},
-    "Pause iCloud Photos in the Photos app…": {},
     "Pauses at %@": {},
     "Photo analysis": {},
     "Quit shyCloud": {},
@@ -34,6 +33,7 @@
     "Star on GitHub": {},
     "Start": {},
     "Start and end can't be the same time.": {},
+    "Stops photo and video uploads and downloads. The Photos app still opens.": {},
     "Sync Off": {},
     "Sync On": {},
     "Sync hours": {},
@@ -47,6 +47,7 @@
     "iCloud Drive is paused": {},
     "iCloud Drive is syncing": {},
     "iCloud Drive syncs only during these hours and stays paused the rest of the day.": {},
+    "iCloud Photos": {},
     "iCloud paused": {},
     "iCloud syncing": {}
   },

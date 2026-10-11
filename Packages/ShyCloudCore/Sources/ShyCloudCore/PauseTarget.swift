@@ -2,12 +2,14 @@
 public enum PauseTarget: String, CaseIterable, Codable, Sendable {
     /// iCloud Drive sync engine (`bird`). Always paused when sync is paused.
     case drive
+    /// iCloud Photos sync (`cloudphotod`). Optional. The Photos app still opens.
+    case photos
     /// Photo analysis (`photoanalysisd`). Optional, low risk.
     case photoAnalysis
     /// CloudKit (`cloudd`). Optional, advanced: affects Messages, Notes, Reminders and more.
     case cloudKit
 
-    public static let pauseOrder: [PauseTarget] = [.drive, .photoAnalysis, .cloudKit]
+    public static let pauseOrder: [PauseTarget] = [.drive, .photos, .photoAnalysis, .cloudKit]
     public static let resumeOrder: [PauseTarget] = pauseOrder.reversed()
 
     /// Known install locations across macOS 26–27. Simulator runtimes live under
@@ -18,6 +20,10 @@ public enum PauseTarget: String, CaseIterable, Codable, Sendable {
             [
                 "/System/Library/PrivateFrameworks/iCloudDriveCore.framework/Versions/A/Support/bird",
                 "/System/Library/PrivateFrameworks/CloudDocsDaemon.framework/Versions/A/Support/bird",
+            ]
+        case .photos:
+            [
+                "/System/Library/PrivateFrameworks/CloudPhotoLibrary.framework/Versions/A/Support/cloudphotod",
             ]
         case .photoAnalysis:
             [

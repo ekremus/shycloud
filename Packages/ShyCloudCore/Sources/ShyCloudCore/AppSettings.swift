@@ -11,6 +11,7 @@ public final class AppSettings {
         static let startMinute = "startMinute"
         static let endHour = "endHour"
         static let endMinute = "endMinute"
+        static let pausePhotos = "pausePhotos"
         static let pausePhotoAnalysis = "pausePhotoAnalysis"
         static let pauseCloudKit = "pauseCloudKit"
         static let showInMenuBar = "showInMenuBar"
@@ -26,6 +27,10 @@ public final class AppSettings {
     }
 
     public private(set) var schedule: Schedule
+
+    public var pausePhotos: Bool {
+        didSet { defaults.set(pausePhotos, forKey: Key.pausePhotos); onChange?() }
+    }
 
     public var pausePhotoAnalysis: Bool {
         didSet { defaults.set(pausePhotoAnalysis, forKey: Key.pausePhotoAnalysis); onChange?() }
@@ -59,6 +64,7 @@ public final class AppSettings {
             end: clock(Key.endHour, Key.endMinute, fallback.end)
         )
         schedule = stored.isValid ? stored : fallback
+        pausePhotos = defaults.bool(forKey: Key.pausePhotos)
         pausePhotoAnalysis = defaults.bool(forKey: Key.pausePhotoAnalysis)
         pauseCloudKit = defaults.bool(forKey: Key.pauseCloudKit)
         showInMenuBar = defaults.object(forKey: Key.showInMenuBar) as? Bool ?? true
@@ -83,6 +89,7 @@ public final class AppSettings {
         PauseTarget.pauseOrder.filter { target in
             switch target {
             case .drive: true
+            case .photos: pausePhotos
             case .photoAnalysis: pausePhotoAnalysis
             case .cloudKit: pauseCloudKit
             }

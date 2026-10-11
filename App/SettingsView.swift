@@ -36,6 +36,10 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle(isOn: $settings.pausePhotos) {
+                    Text("iCloud Photos")
+                    Text("Stops photo and video uploads and downloads. The Photos app still opens.")
+                }
                 Toggle(isOn: $settings.pausePhotoAnalysis) {
                     Text("Photo analysis")
                     Text("Low risk. Photos still opens normally.")
@@ -44,10 +48,6 @@ struct SettingsView: View {
                     Text("CloudKit")
                     Text("Also pauses Messages, Notes, Reminders and other iCloud apps. They may freeze until sync resumes.")
                 }
-                Button(String(localized: "Pause iCloud Photos in the Photos app…")) {
-                    NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Photos.app"))
-                }
-                .buttonStyle(.link)
             } header: {
                 Text("Also pause")
             } footer: {

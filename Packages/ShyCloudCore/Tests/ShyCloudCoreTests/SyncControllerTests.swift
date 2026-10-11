@@ -8,7 +8,7 @@ final class FakeProcesses: ProcessControlling {
     private(set) var paused: Set<PauseTarget>
     /// Paused targets running for a breath (still owned by ShyCloud).
     private(set) var released: Set<PauseTarget> = []
-    /// One entry per non-empty call, e.g. "resume drive,photoAnalysis,cloudKit" (pause order).
+    /// One entry per non-empty call, e.g. "resume drive,photos,photoAnalysis,cloudKit" (pause order).
     private(set) var log: [String] = []
 
     init(paused: Set<PauseTarget> = []) {
@@ -244,7 +244,7 @@ struct SyncControllerTests {
         })
         #expect(heartbeatWhenRegistering == h.date)
         #expect(pausedWhenRegistering == [])
-        #expect(h.processes.log.first == "resume drive,photoAnalysis,cloudKit")
+        #expect(h.processes.log.first == "resume drive,photos,photoAnalysis,cloudKit")
     }
 
     @Test func firstLaunchInitialisesLastSyncedAt() {

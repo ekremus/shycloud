@@ -14,6 +14,11 @@ struct PauseTargetTests {
         #expect(PauseTarget.target(forExecutablePath: "/System/Library/PrivateFrameworks/PhotoAnalysis.framework/Versions/A/Support/photoanalysisd") == .photoAnalysis)
     }
 
+    @Test func cloudPhotoLibraryPathMapsToPhotos() {
+        #expect(PauseTarget.target(forExecutablePath: "/System/Library/PrivateFrameworks/CloudPhotoLibrary.framework/Versions/A/Support/cloudphotod") == .photos)
+        #expect(PauseTarget.target(forExecutablePath: "/usr/local/bin/cloudphotod") == nil)
+    }
+
     @Test func simulatorCopiesAreNeverTargets() {
         let simCloudd = "/Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/CloudKitDaemon.framework/Support/cloudd"
         #expect(PauseTarget.target(forExecutablePath: simCloudd) == nil)
@@ -31,8 +36,8 @@ struct PauseTargetTests {
     }
 
     @Test func orders() {
-        #expect(PauseTarget.pauseOrder == [.drive, .photoAnalysis, .cloudKit])
-        #expect(PauseTarget.resumeOrder == [.cloudKit, .photoAnalysis, .drive])
+        #expect(PauseTarget.pauseOrder == [.drive, .photos, .photoAnalysis, .cloudKit])
+        #expect(PauseTarget.resumeOrder == [.cloudKit, .photoAnalysis, .photos, .drive])
     }
 
     @Test func inspectorSeesOwnProcessButNeverTargetsIt() throws {

@@ -15,6 +15,7 @@ struct AppSettingsTests {
         let settings = AppSettings(defaults: freshDefaults())
         #expect(settings.mode == .scheduled)
         #expect(settings.schedule == .default)
+        #expect(!settings.pausePhotos)
         #expect(!settings.pausePhotoAnalysis)
         #expect(!settings.pauseCloudKit)
         #expect(settings.showInMenuBar)
@@ -27,6 +28,7 @@ struct AppSettingsTests {
         let first = AppSettings(defaults: defaults)
         first.mode = .alwaysPause
         first.setSchedule(Schedule(start: ClockTime(hour: 22, minute: 15), end: ClockTime(hour: 6, minute: 0)))
+        first.pausePhotos = true
         first.pauseCloudKit = true
         first.showInMenuBar = false
         first.lastSyncedAt = Date(timeIntervalSince1970: 1_800_000_000)
@@ -34,10 +36,11 @@ struct AppSettingsTests {
         let second = AppSettings(defaults: defaults)
         #expect(second.mode == .alwaysPause)
         #expect(second.schedule == Schedule(start: ClockTime(hour: 22, minute: 15), end: ClockTime(hour: 6, minute: 0)))
+        #expect(second.pausePhotos)
         #expect(second.pauseCloudKit)
         #expect(!second.showInMenuBar)
         #expect(second.lastSyncedAt == Date(timeIntervalSince1970: 1_800_000_000))
-        #expect(second.enabledTargets == [.drive, .cloudKit])
+        #expect(second.enabledTargets == [.drive, .photos, .cloudKit])
     }
 
     @Test func rejectsInvalidSchedule() {
@@ -52,13 +55,14 @@ struct AppSettingsTests {
         var count = 0
         settings.onChange = { count += 1 }
         settings.mode = .alwaysSync
+        settings.pausePhotos = true
         settings.pausePhotoAnalysis = true
         settings.pauseCloudKit = true
         settings.setSchedule(Schedule(start: ClockTime(hour: 1, minute: 0), end: ClockTime(hour: 2, minute: 0)))
-        #expect(count == 4)
+        #expect(count == 5)
         settings.showInMenuBar = false
         settings.lastSyncedAt = .now
-        #expect(count == 4)
+        #expect(count == 5)
     }
 
     @Test func outOfRangeStoredTimeFallsBack() {
@@ -72,6 +76,7 @@ struct AppSettingsTests {
         let settings = AppSettings(defaults: freshDefaults())
         settings.pauseCloudKit = true
         settings.pausePhotoAnalysis = true
-        #expect(settings.enabledTargets == [.drive, .photoAnalysis, .cloudKit])
+        settings.pausePhotos = true
+        #expect(settings.enabledTargets == [.drive, .photos, .photoAnalysis, .cloudKit])
     }
 }

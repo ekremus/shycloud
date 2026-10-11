@@ -48,6 +48,7 @@ struct SignalProcessControllerTests {
     let bird = ProcessIdentity(pid: 10, startTime: 1)
     let photo = ProcessIdentity(pid: 20, startTime: 1)
     let cloudd = ProcessIdentity(pid: 30, startTime: 1)
+    let cloudphotod = ProcessIdentity(pid: 40, startTime: 1)
 
     func make() -> (SignalProcessController, FakeInspector, FakeSignaler) {
         let inspector = FakeInspector()
@@ -73,6 +74,16 @@ struct SignalProcessControllerTests {
         #expect(signaler.sent.map { $0.0 } == [SIGCONT, SIGCONT, SIGCONT])
         #expect(signaler.sent.map { $0.1 } == [30, 20, 10])
         #expect(controller.pausedProcesses().isEmpty)
+    }
+
+    @Test func photosSitsBetweenDriveAndPhotoAnalysis() {
+        let (controller, inspector, signaler) = make()
+        inspector.table[cloudphotod] = .photos
+        controller.pause(PauseTarget.allCases)
+        #expect(signaler.sent.map { $0.1 } == [10, 40, 20, 30])
+        signaler.sent.removeAll()
+        controller.resumeAll()
+        #expect(signaler.sent.map { $0.1 } == [30, 20, 40, 10])
     }
 
     @Test func partialResumeKeepsOthersPaused() {
