@@ -15,9 +15,13 @@ final class FakeProcesses: ProcessControlling {
         self.paused = paused
     }
 
+    /// When set, only these targets have a running process; pausing others finds nothing.
+    var alive: Set<PauseTarget>?
+
     func pause(_ targets: [PauseTarget]) {
-        paused.formUnion(targets)
-        record("pause", targets)
+        let found = alive.map { alive in targets.filter(alive.contains) } ?? targets
+        paused.formUnion(found)
+        record("pause", found)
     }
 
     func resume(_ targets: [PauseTarget]) {
@@ -324,6 +328,30 @@ struct SyncControllerTests {
         h.processes.resume([.drive]) // simulate launchd replacing bird
         h.processes.onPausedProcessExit?()
         #expect(h.processes.paused == [.drive])
+    }
+
+    @Test func newProcessAppearingAfterExitIsPausedByFollowUp() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        #expect(h.processes.paused == [.drive])
+        // bird dies; launchd starts a new one 4 s later.
+        h.processes.alive = []
+        h.processes.resume([.drive])
+        h.processes.onPausedProcessExit?()
+        h.advance(4)
+        #expect(h.processes.paused.isEmpty)
+        h.processes.alive = [.drive]
+        h.advance(1.1)
+        #expect(h.processes.paused == [.drive])
+    }
+
+    @Test func exitFollowUpsStopAfterQuit() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.processes.onPausedProcessExit?()
+        h.controller.prepareToQuit()
+        h.advance(12)
+        #expect(h.processes.paused.isEmpty)
     }
 
     // MARK: Fix round 1

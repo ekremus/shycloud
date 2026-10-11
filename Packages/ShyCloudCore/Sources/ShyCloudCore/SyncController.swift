@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import os
 
 /// Decides whether sync should run and applies it idempotently (spec §2, §4, §5).
 /// Pausing is a deep pause: targets are frozen but breathe (`Breather`), thaw while apps launch,
@@ -17,6 +18,11 @@ public final class SyncController {
     /// After a probe timeout nothing is paused for this long.
     public static let cooldownDuration: TimeInterval = 10 * 60
 
+    /// A new `bird` usually starts a few seconds after the old one exits; re-apply at these delays after an exit.
+    public static let exitFollowUpDelays: [TimeInterval] = [2, 5, 10]
+
+    private static let logger = Logger(subsystem: "com.ekremus.ShyCloud", category: "Sync")
+
     public private(set) var status: SyncStatus = .syncing(until: nil)
     public var isPausedNow: Bool { status.isPaused }
 
@@ -31,6 +37,7 @@ public final class SyncController {
     @ObservationIgnored private let breather: Breather
     @ObservationIgnored private let thawTimer: any OneShotTimer
     @ObservationIgnored private let probeTimer: any OneShotTimer
+    @ObservationIgnored private let followUpTimer: any OneShotTimer
     /// An app is launching: targets run until `thawTimer` fires.
     @ObservationIgnored private var isThawing = false
     /// The underlying call has not returned yet (even if it already timed out). Never start a second one.
@@ -73,6 +80,7 @@ public final class SyncController {
         )
         thawTimer = makeTimer(1)
         probeTimer = makeTimer(0.25)
+        followUpTimer = makeTimer(0.5)
     }
 
     /// Launch sequence, spec §5.1.
@@ -80,7 +88,7 @@ public final class SyncController {
         writeHeartbeat()
         processes.resumeAll()
         registerHelper()
-        processes.onPausedProcessExit = { [weak self] in self?.apply() }
+        processes.onPausedProcessExit = { [weak self] in self?.pausedProcessExited() }
         settings.onChange = { [weak self] in self?.apply() }
         if settings.lastSyncedAt == nil {
             // iCloud ran normally before ShyCloud existed; start the "Last synced" line from now.
@@ -103,7 +111,24 @@ public final class SyncController {
         thawTimer.schedule(after: Self.launchThawDuration) { [weak self] in self?.endThaw() }
         guard !isThawing else { return }
         isThawing = true
+        if isPausedNow { Self.logger.notice("launch thaw started") }
         if isPausedNow { apply() }
+    }
+
+    private func pausedProcessExited() {
+        Self.logger.notice("paused process exited")
+        apply()
+        scheduleExitFollowUp(step: 0)
+    }
+
+    private func scheduleExitFollowUp(step: Int) {
+        let delays = Self.exitFollowUpDelays
+        guard step < delays.count, !isAsleep, !isTerminating else { return }
+        let wait = delays[step] - (step > 0 ? delays[step - 1] : 0)
+        followUpTimer.schedule(after: wait) { [weak self] in
+            self?.apply()
+            self?.scheduleExitFollowUp(step: step + 1)
+        }
     }
 
     public func handleWake() {
@@ -115,8 +140,9 @@ public final class SyncController {
     public func handleWillSleep() {
         isAsleep = true
         endThawSilently()
+        followUpTimer.cancel()
         probeTimer.cancel() // needed: a wake within the timeout would otherwise let it fire although targets ran during sleep
-        resumeEverything()
+        resumeEverything(reason: "sleep")
         runningSince = nil
         status = .syncing(until: nil)
         activity.setHolding(false)
@@ -124,7 +150,8 @@ public final class SyncController {
 
     public func handlePowerOff() {
         powerOffAt = now()
-        resumeEverything()
+        followUpTimer.cancel()
+        resumeEverything(reason: "power-off")
         status = .syncing(until: nil)
         activity.setHolding(false)
     }
@@ -133,7 +160,8 @@ public final class SyncController {
     public func prepareToQuit() {
         isTerminating = true
         endThawSilently()
-        resumeEverything()
+        followUpTimer.cancel()
+        resumeEverything(reason: "quit")
         status = .syncing(until: nil)
         activity.setHolding(false)
     }
@@ -169,7 +197,7 @@ public final class SyncController {
         if !wantsRunning, isHeartbeatWritten, helper == .working {
             if let cooldownEnd = cooldownEnd(at: date) {
                 // iCloud stopped answering while paused: let it run, try again later.
-                resumeEverything()
+                resumeEverything(reason: "cooldown")
                 if runningSince == nil { runningSince = date }
                 let pausesAgainFirst = nextChange.map { cooldownEnd < $0 } ?? true
                 status = .syncing(until: pausesAgainFirst ? cooldownEnd : nil)
@@ -178,12 +206,13 @@ public final class SyncController {
             }
             if isThawing {
                 // An app is launching; the status stays "paused" for these few seconds.
-                resumeEverything()
+                resumeEverything(reason: "launch thaw")
             } else {
                 let enabled = settings.enabledTargets
                 processes.resume(PauseTarget.allCases.filter { !enabled.contains($0) })
                 // During a release window the breather re-stops at its end; pausing now would cut the breath short.
                 if !breather.isReleased { processes.pause(enabled) }
+                if !breather.isRunning { Self.logger.notice("pause started") }
                 breather.start()
             }
             runningSince = nil
@@ -192,7 +221,13 @@ public final class SyncController {
             return
         }
 
-        resumeEverything()
+        let reason: String
+        if wantsRunning {
+            reason = settings.mode == .scheduled ? "window" : "mode"
+        } else {
+            reason = isHeartbeatWritten ? "helper" : "heartbeat"
+        }
+        resumeEverything(reason: reason)
         if runningSince == nil { runningSince = date }
         if !wantsRunning {
             // Not pausing: either the helper is still starting up (or launchd skipped its runs during sleep)
@@ -205,7 +240,8 @@ public final class SyncController {
     }
 
     /// Stopped targets are only ever left with the breather running; this is the one way out.
-    private func resumeEverything() {
+    private func resumeEverything(reason: String) {
+        if breather.isRunning { Self.logger.notice("resumed: \(reason, privacy: .public)") }
         breather.stop()
         processes.resumeAll()
     }
@@ -213,6 +249,7 @@ public final class SyncController {
     private func endThaw() {
         guard isThawing else { return }
         isThawing = false
+        Self.logger.notice("launch thaw ended")
         if isPausedNow { apply() }
     }
 
@@ -229,6 +266,7 @@ public final class SyncController {
             return start.addingTimeInterval(Self.cooldownDuration)
         }
         cooldownStartedAt = nil
+        Self.logger.notice("cooldown ended")
         return nil
     }
 
@@ -249,6 +287,7 @@ public final class SyncController {
         // Only a hang while the targets are really held (frozen and breathing) says iCloud stopped answering.
         guard isProbeInFlight, breather.isRunning, !isThawing, !isAsleep, !isTerminating else { return }
         cooldownStartedAt = now()
+        Self.logger.notice("probe timeout: cooldown started")
         apply()
     }
 
