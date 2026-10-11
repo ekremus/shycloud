@@ -18,7 +18,7 @@ struct AboutView: View {
         VStack(spacing: 0) {
             Image("Logo")
                 .resizable()
-                .frame(width: 128, height: 100)
+                .frame(width: 134, height: 100)
                 .accessibilityHidden(true)
 
             Text(verbatim: "shyCloud")
