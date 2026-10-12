@@ -24,7 +24,7 @@ What it changes, measured on a MacBook Pro M4 Pro with two git worktrees busy in
 | operations slower than 5 s | 9 | 0 |
 | slowest operation | 56 s | 0.4 s |
 
-By default shyCloud does not stop all uploads. A new 2 GB file still uploaded while paused. Turn on **Stop uploads completely** in Settings to stop them too. See [How it works](#how-it-works).
+While paused, shyCloud stops iCloud Drive completely, so new files wait to upload until sync resumes. If you would rather have apps never wait for iCloud, turn on **Let apps reach iCloud while paused** in Settings. New files then keep uploading in the background. See [How it works](#how-it-works).
 
 ## Features
 
@@ -32,8 +32,9 @@ By default shyCloud does not stop all uploads. A new 2 GB file still uploaded wh
 - **Sync Off:** iCloud stays paused until you turn it back on.
 - **Sync On:** normal iCloud.
 - **Safe:** iCloud comes back when you quit shyCloud, when the Mac sleeps or logs out, and if shyCloud crashes.
-- **Apps keep working:** an app that asks iCloud something waits 2 seconds at most.
-- **Stop uploads completely:** an optional stricter pause that also stops new uploads. Some apps may then wait for iCloud.
+- **Stops uploads:** while paused, new files wait until sync resumes.
+- **Apps keep working:** when you open an app, iCloud runs normally for 10 seconds.
+- **Breathing mode:** an optional lighter pause. Apps that ask iCloud something wait 2 seconds at most, but uploads keep going.
 - **Hideable:** you can remove the menu bar icon. shyCloud keeps running.
 - **Private:** no account, no tracking.
 
@@ -47,15 +48,19 @@ The first signed release is coming soon. Until then you can [build from source](
 
 macOS has no public way to pause iCloud Drive. shyCloud stops the iCloud Drive process (`bird`) with the same signal as `kill -STOP`.
 
-A fully stopped `bird` makes some apps freeze. Steam, GeForce NOW and other Chromium apps ask iCloud a question when they open and wait for the answer. So shyCloud does a deep pause:
+While sync is paused, `bird` stays stopped the whole time. In our test a new 2 GB file uploaded 0 MB this way.
+
+A stopped `bird` can make an app wait when it asks iCloud something. Steam, GeForce NOW and other Chromium apps do this when they open. Open or Save panels on iCloud folders do it too. So when you open an app, iCloud runs normally for 10 seconds, which ends most waits. If an app keeps waiting, open another app or choose Sync On.
+
+If you would rather apps never wait, turn on **Let apps reach iCloud while paused** in Settings. This is breathing mode:
 
 - `bird` is stopped but gets 0.2 seconds to run every 2 seconds. Apps get their answer in under 2 seconds.
 - When you open an app, iCloud runs normally for 10 seconds.
 - Every 30 seconds shyCloud checks that iCloud answers within 3 seconds. If it does not, iCloud runs normally for 10 minutes.
 
-During a deep pause the iCloud Drive process uses about a third of its normal CPU time in our tests, so it stops competing with your work. It does not stop all network use. New files can still upload, because the transfer itself runs in a separate system process. The full results are in [docs/pause-method-study-2026-10-11.md](docs/pause-method-study-2026-10-11.md).
+In breathing mode the iCloud Drive process uses about a third of its normal CPU time in our tests, so it stops competing with your work. It does not stop uploads. New files keep uploading, because the transfer itself runs in a separate system process. The full results are in [docs/pause-method-study-2026-10-11.md](docs/pause-method-study-2026-10-11.md).
 
-If you also want to stop uploads, turn on **Stop uploads completely** in Settings. Then `bird` stays stopped the whole time sync is paused, with no short breaks. In our test a new 2 GB file uploaded 0 MB this way. The cost is that an app that asks iCloud something waits until `bird` runs again. Two examples are Chromium apps when they open and Open or Save panels on iCloud folders. Opening any app still lets iCloud run normally for 10 seconds, which ends most waits. If an app keeps waiting, open another app or choose Sync On. The 30 second check is off in this mode, because short waits are expected here. All the safety rules below still apply.
+All the safety rules below apply in both modes.
 
 Safety rules:
 

@@ -21,9 +21,13 @@ struct SettingsView: View {
             }
 
             Section {
-                Toggle(isOn: $settings.stopUploadsCompletely) {
-                    Text("Stop uploads completely")
-                    Text("Some apps may wait for iCloud until you open an app or choose Sync On.")
+                // Full stop is the default; breathing is the opt-in (stored as !stopUploadsCompletely).
+                Toggle(isOn: Binding(
+                    get: { !settings.stopUploadsCompletely },
+                    set: { settings.stopUploadsCompletely = !$0 }
+                )) {
+                    Text("Let apps reach iCloud while paused")
+                    Text("Breathing mode. Apps never wait, but uploads keep going in the background.")
                 }
             }
 

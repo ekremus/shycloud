@@ -3,10 +3,10 @@ import Observation
 import os
 
 /// Decides whether sync should run and applies it idempotently (spec §2, §4, §5).
-/// Pausing is a deep pause: targets are frozen but breathe (`Breather`), thaw while apps launch,
-/// and a health check backs off for `cooldownDuration` if iCloud stops answering.
-/// With `AppSettings.stopUploadsCompletely` targets are held without breathing (full stop) and the
-/// health check is skipped, because apps waiting on iCloud are expected in that mode.
+/// Pausing is a full stop by default (`AppSettings.stopUploadsCompletely`): targets are held without
+/// breathing and thaw while apps launch; the health check is skipped, because apps waiting on iCloud
+/// are expected there. Opted-in breathing freezes targets but lets them breathe (`Breather`), and a
+/// health check backs off for `cooldownDuration` if iCloud stops answering.
 @MainActor
 @Observable
 public final class SyncController {

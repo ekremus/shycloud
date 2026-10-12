@@ -100,13 +100,17 @@ final class Harness {
         helperState: { [unowned self] in self.helperState }
     )
 
-    /// `paused` simulates targets left stopped by a previous crash.
-    init(_ text: String, paused: Set<PauseTarget> = []) {
+    /// `paused` simulates targets left stopped by a previous crash. Most tests use breathing;
+    /// `stopUploadsCompletely: nil` keeps the stored default (full stop).
+    init(_ text: String, paused: Set<PauseTarget> = [], stopUploadsCompletely: Bool? = false) {
         clock = FakeClock(TestTime.date(text))
         processes = FakeProcesses(paused: paused)
         let name = "shycloud-tests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: name)!
         defaults.removePersistentDomain(forName: name)
+        if let stopUploadsCompletely {
+            defaults.set(stopUploadsCompletely, forKey: "stopUploadsCompletely")
+        }
         settings = AppSettings(defaults: defaults)
         files = SafetyFiles(directory: FileManager.default.temporaryDirectory.appending(path: name))
     }
@@ -839,6 +843,18 @@ struct SyncControllerTests {
     }
 
     // MARK: Stop uploads completely (full stop, no breathing)
+
+    @Test func fullStopIsTheDefault() {
+        let h = Harness("2026-10-12 14:00", stopUploadsCompletely: nil)
+        h.controller.start(registerHelper: {})
+        #expect(h.processes.paused == [.drive])
+        let mark = h.processes.log.count
+        h.advance(60)
+        #expect(h.log(since: mark).isEmpty) // no breaths
+        h.controller.tick()
+        #expect(h.probe.pings == 0)
+        #expect(h.processes.paused == [.drive])
+    }
 
     @Test func stopUploadsCompletelyNeverBreathes() {
         let h = Harness("2026-10-12 14:00")

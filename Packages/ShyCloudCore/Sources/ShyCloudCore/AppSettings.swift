@@ -41,8 +41,8 @@ public final class AppSettings {
         didSet { defaults.set(pauseCloudKit, forKey: Key.pauseCloudKit); onChange?() }
     }
 
-    /// While paused, keep targets stopped without breathing (spec §4.1). Stops uploads, but apps that
-    /// ask iCloud something wait until an app launch thaw or Sync On.
+    /// While paused, keep targets stopped without breathing (spec §4.1). Default true: stops uploads,
+    /// but apps that ask iCloud something wait until a thaw or Sync On. False opts into breathing.
     public var stopUploadsCompletely: Bool {
         didSet { defaults.set(stopUploadsCompletely, forKey: Key.stopUploadsCompletely); onChange?() }
     }
@@ -74,7 +74,7 @@ public final class AppSettings {
         pausePhotos = defaults.bool(forKey: Key.pausePhotos)
         pausePhotoAnalysis = defaults.bool(forKey: Key.pausePhotoAnalysis)
         pauseCloudKit = defaults.bool(forKey: Key.pauseCloudKit)
-        stopUploadsCompletely = defaults.bool(forKey: Key.stopUploadsCompletely)
+        stopUploadsCompletely = defaults.object(forKey: Key.stopUploadsCompletely) as? Bool ?? true
         showInMenuBar = defaults.object(forKey: Key.showInMenuBar) as? Bool ?? true
         lastSyncedAt = defaults.object(forKey: Key.lastSyncedAt) as? Date
     }

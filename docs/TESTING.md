@@ -11,12 +11,12 @@ Useful commands:
 - Emergency resume: `killall -CONT bird cloudd photoanalysisd`
 - iCloud responsiveness: `swift scripts/ubiquity-probe.swift` (prints the latency of `FileManager.ubiquityIdentityToken`, or `HANG` and exits 1 after 3 s)
 
-While paused, `bird` is breathing: `T` most of the time, `S`/`R` for 0.2 s every 2 s (deep pause, spec §4.1).
+While paused, `bird` stays `T` (full stop, the default). With "Let apps reach iCloud while paused" on, `bird` is breathing: `T` most of the time, `S`/`R` for 0.2 s every 2 s (spec §4.1).
 
 | # | Scenario | Steps | Expected |
 |---|---|---|---|
 | 1 | First launch | Open app | Menu icon appears; mode Scheduled (02:00–09:00); watchdog registered; login item on |
-| 2 | Pause | Choose "Sync Off" | `bird` shows `T` within 1 s (briefly `S`/`R` while breathing); icon `icloud.slash`; status "Paused" |
+| 2 | Pause | Choose "Sync Off" | `bird` shows `T` within 1 s (briefly `S`/`R` in breathing mode); icon `icloud.slash`; status "Paused" |
 | 3 | Resume | Choose "Sync On" | `bird` shows `S`/`R`; status "Syncing" |
 | 4 | Schedule | Set window to start 2 min from now, mode Scheduled | Paused now; within 30 s after start time `bird` resumes; after end it pauses again |
 | 5 | Simulator safety | Boot any iOS Simulator, choose Sync Off with CloudKit ticked | Only `/System/Library/...cloudd` is `T`; Simulator `cloudd` stays `S` |
@@ -38,6 +38,6 @@ While paused, `bird` is breathing: `T` most of the time, `S`/`R` for 0.2 s every
 | 22 | SIGTERM | Sync Off → `kill -TERM <ShyCloud pid>` | App quits and `bird` is `S`/`R` immediately (no 3-minute wait) |
 | 23 | Moved app | First launch from the DMG, quit, copy to /Applications and launch from there, Sync Off, then `kill -9 <ShyCloud pid>` | Watchdog resumes `bird` within ~3 min (registration follows the new path) |
 | 24 | Fresh install liveness | `rm ~/Library/Application\ Support/ShyCloud/watchdog-ran`, `defaults delete com.ekremus.ShyCloud watchdogRegisteredPath`, launch outside the window | Status shows "ShyCloud — Syncing" (nothing paused) until the watchdog's first run, then pauses |
-| 25 | App launch while paused | Sync Off, wait 1 min, then launch GeForce NOW and Steam (Chromium/CEF apps) | Both open normally, no beachball; `bird` runs for ~10 s after each launch, then breathes again |
-| 26 | Responsiveness while paused | Sync Off, wait 1 min, run `swift scripts/ubiquity-probe.swift` a few times | Every run prints a latency under 3 s; never `HANG` |
+| 25 | App launch while paused | Sync Off, wait 1 min, then launch GeForce NOW and Steam (Chromium/CEF apps) | Both open normally, no beachball; `bird` runs for ~10 s after each launch, then is `T` again (breathes in breathing mode) |
+| 26 | Responsiveness while paused | Turn on "Let apps reach iCloud while paused", Sync Off, wait 1 min, run `swift scripts/ubiquity-probe.swift` a few times | Every run prints a latency under 3 s; never `HANG` |
 | 27 | Git while paused | Sync Off, in a git repo inside iCloud Drive (e.g. Desktop/Documents): `git status`, edit a file, `git commit` | Commands finish normally (no hang) |
