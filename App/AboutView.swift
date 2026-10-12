@@ -23,7 +23,8 @@ struct AboutView: View {
 
             Text(verbatim: "shyCloud")
                 .font(.custom("Jaro", size: 30, relativeTo: .title2))
-                .padding(.top, 12)
+                // The logo image keeps transparent room below for its shadow, so pull the name up into it.
+                .padding(.top, -6)
 
             Text("Version \(version) (build \(build))")
                 .font(.callout)
@@ -37,19 +38,28 @@ struct AboutView: View {
                 .multilineTextAlignment(.center)
                 .padding(.top, 16)
 
-            HStack(spacing: 16) {
+            VStack(spacing: 8) {
                 Button {
                     NSWorkspace.shared.open(Self.repoURL)
                 } label: {
-                    Label("Star on GitHub", systemImage: "star")
+                    Label("Star on GitHub", systemImage: "star.fill")
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(CallToActionButtonStyle())
+                .keyboardShortcut(.defaultAction)
+
                 if let noticesURL = Self.noticesURL {
-                    Button(String(localized: "Third-Party Licenses")) {
+                    Button {
                         NSWorkspace.shared.open(noticesURL)
+                    } label: {
+                        Text("Third-Party Licenses")
+                            .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
                 }
             }
-            .buttonStyle(.link)
+            .frame(width: 210)
             .padding(.top, 20)
 
             Text("Free and open source · GPL-3.0")
@@ -60,5 +70,24 @@ struct AboutView: View {
         .padding(.horizontal, 24)
         // Fixed size, equal to the window's content size: never let content and window size each other.
         .frame(width: 300, height: 360)
+    }
+}
+
+/// Filled brand-blue capsule. Unlike `.borderedProminent` it stays blue when the window is inactive,
+/// so the star request always reads as the main action.
+private struct CallToActionButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.semibold))
+            .foregroundStyle(.white)
+            .padding(.vertical, 7)
+            .background(
+                LinearGradient(colors: [Color(red: 0.12, green: 0.65, blue: 1), Color(red: 0, green: 0.4, blue: 1)],
+                               startPoint: .top, endPoint: .bottom),
+                in: Capsule()
+            )
+            .shadow(color: Color(red: 0, green: 0.3, blue: 0.8).opacity(0.25), radius: 3, y: 1)
+            .opacity(configuration.isPressed ? 0.8 : 1)
+            .contentShape(Capsule())
     }
 }
