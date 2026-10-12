@@ -16,6 +16,16 @@ shyCloud is a free menu bar app for Apple Silicon Macs. It keeps iCloud Drive pa
 
 Why: iCloud Drive can use a lot of CPU and disk while it syncs big folders like code, `node_modules` or video exports. Your Mac gets slow, Finder stalls and git or Xcode can clash with iCloud.
 
+What it changes, measured on a MacBook Pro M4 Pro with two git worktrees busy in a repo on iCloud Desktop for 20 minutes:
+
+| | iCloud on | shyCloud paused |
+|---|---|---|
+| git operations done | 385 per worktree | 523 per worktree |
+| operations slower than 5 s | 9 | 0 |
+| slowest operation | 56 s | 0.4 s |
+
+shyCloud does not stop uploads that iCloud has already started. A new 2 GB file still uploaded while paused. See [How it works](#how-it-works).
+
 ## Features
 
 - **Scheduled:** iCloud Drive syncs only in your daily window.
