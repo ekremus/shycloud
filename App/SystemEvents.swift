@@ -21,11 +21,11 @@ enum SystemEvents {
                 MainActor.assumeIsolated { sync.handleAppLaunch() }
             }
         }
-        // Activation thaw: an app brought to the front (Finder, or any other) may need iCloud right away.
-        // SyncController thaws each app at most once a minute, and only while paused.
+        // Activation thaw: only Finder coming to the front thaws iCloud (other apps would leak uploads in full stop).
+        // SyncController ignores every other app, thaws at most once a minute, and only while paused.
         workspace.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { note in
             let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-            guard let app else { return }
+            guard let app, app.bundleIdentifier != Bundle.main.bundleIdentifier else { return }
             let key = app.bundleIdentifier ?? "pid \(app.processIdentifier)"
             MainActor.assumeIsolated { sync.handleAppActivation(bundleID: key) }
         }

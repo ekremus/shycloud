@@ -2,7 +2,7 @@
 
 > **Correction (later the same day):** the traffic numbers below count only `cloudd`. Uploads of iCloud Drive files run through `nsurlsessiond`. A follow-up test with a new 30 MB file showed it uploaded within 5 minutes in Normal, Deep pause and Deep pause with CloudKit paused. Only a full freeze (no breathing) stopped the upload, and full freeze makes apps hang. Deep pause lowers iCloud's CPU and disk work but does not save mobile data.
 
-Why ShyCloud uses **deep pause** (freeze `bird` but let it breathe for 0.2 s every 2 s, plus a 10 s thaw on any app launch) and not anything else. All numbers measured on a MacBook Pro M4 Pro, macOS 27.0.1, with a real iCloud Drive backlog.
+Why ShyCloud uses **deep pause** (freeze `bird` but let it breathe for 0.2 s every 2 s, plus a 10 s thaw on any app launch or Finder activation) and not anything else. All numbers measured on a MacBook Pro M4 Pro, macOS 27.0.1, with a real iCloud Drive backlog.
 
 ## The bug that started it
 

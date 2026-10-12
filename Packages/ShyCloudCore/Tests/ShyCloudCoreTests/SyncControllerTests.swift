@@ -701,12 +701,12 @@ struct SyncControllerTests {
         h.expectNextBreathWithinTwoSeconds()
     }
 
-    @Test func anyAppActivationThaws() {
+    @Test func otherAppActivationsDoNotThaw() {
         let h = Harness("2026-10-12 14:00")
         h.controller.start(registerHelper: {})
-        h.controller.handleAppActivation(bundleID: "com.example.SomeEditor")
-        #expect(h.held.isEmpty)
-        h.advance(10.1)
+        for id in ["com.example.SomeEditor", "com.apple.Safari", "com.ekremus.ShyCloud"] {
+            h.controller.handleAppActivation(bundleID: id)
+        }
         #expect(h.held == [.drive])
     }
 
@@ -735,13 +735,12 @@ struct SyncControllerTests {
         #expect(h.held.isEmpty)
     }
 
-    @Test func debounceIsPerApp() {
+    @Test func otherAppDoesNotUseUpFindersDebounce() {
         let h = Harness("2026-10-12 14:00")
         h.controller.start(registerHelper: {})
-        h.controller.handleAppActivation(bundleID: "com.apple.finder")
-        h.advance(20)
-        #expect(h.held == [.drive])
         h.controller.handleAppActivation(bundleID: "com.apple.Safari")
+        #expect(h.held == [.drive])
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
         #expect(h.held.isEmpty)
     }
 
@@ -804,7 +803,7 @@ struct SyncControllerTests {
         h.controller.handleWake()
         #expect(h.held == [.drive])
         h.controller.prepareToQuit()
-        h.controller.handleAppActivation(bundleID: "com.apple.Safari")
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
         h.advance(11)
         #expect(h.held.isEmpty)
         #expect(!h.activity.holding)

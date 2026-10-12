@@ -15,9 +15,10 @@ public final class SyncController {
     public static let powerOffHold: TimeInterval = 60
     /// Targets run this long after an app launches (extended by further launches).
     public static let launchThawDuration: TimeInterval = 10
-    /// Targets run this long after an app comes to the front (extends any thaw already running).
+    /// Targets run this long after Finder comes to the front (extends any thaw already running).
+    public static let finderBundleID = "com.apple.finder"
     public static let activationThawDuration: TimeInterval = 10
-    /// The same app's activation thaws at most once in this period, so app switching doesn't keep iCloud thawed.
+    /// Finder's activation thaws at most once in this period, so switching back and forth doesn't keep iCloud thawed.
     public static let activationDebounce: TimeInterval = 60
     /// A probe unanswered this long means apps are hanging on iCloud. Must exceed `Breather.breathInterval`.
     public static let probeTimeout: TimeInterval = 3.0
@@ -127,10 +128,11 @@ public final class SyncController {
         thaw(for: Self.launchThawDuration, reason: "launch")
     }
 
-    /// An app came to the front (workspace `didActivateApplicationNotification`): while paused, let
-    /// targets run for `activationThawDuration` so it can reach iCloud right away (e.g. Finder).
-    /// Each app does this at most once per `activationDebounce`; ignored while not paused.
+    /// An app came to the front (workspace `didActivateApplicationNotification`): while paused and only
+    /// for Finder, let targets run for `activationThawDuration` so it can reach iCloud right away.
+    /// Other apps (including shyCloud itself) are ignored. Thaws at most once per `activationDebounce`.
     public func handleAppActivation(bundleID: String) {
+        guard bundleID == Self.finderBundleID else { return }
         guard !isAsleep, !isTerminating, isPausedNow else { return }
         let time = uptime()
         if let last = activationThawedAt[bundleID], time >= last, time - last < Self.activationDebounce { return }
