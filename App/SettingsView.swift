@@ -21,6 +21,13 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle(isOn: $settings.stopUploadsCompletely) {
+                    Text("Stop uploads completely")
+                    Text("Some apps may wait for iCloud until you open an app or choose Sync On.")
+                }
+            }
+
+            Section {
                 DatePicker(String(localized: "Start"), selection: timeBinding(.start), displayedComponents: .hourAndMinute)
                 DatePicker(String(localized: "End"), selection: timeBinding(.end), displayedComponents: .hourAndMinute)
             } header: {
@@ -83,7 +90,7 @@ struct SettingsView: View {
         .formStyle(.grouped)
         // Fixed size: letting a grouped Form size the window (fixedSize + preferredContentSize)
         // causes an endless update-constraints loop that crashes AppKit. The Form scrolls if needed.
-        .frame(width: 440, height: 600)
+        .frame(width: 440, height: 660)
         .onAppear(perform: refresh)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refresh() }
     }

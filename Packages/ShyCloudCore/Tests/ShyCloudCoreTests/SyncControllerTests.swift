@@ -21,6 +21,7 @@ final class FakeProcesses: ProcessControlling {
     func pause(_ targets: [PauseTarget]) {
         let found = alive.map { alive in targets.filter(alive.contains) } ?? targets
         paused.formUnion(found)
+        released.subtract(found) // a released process is stopped again, like SIGSTOP does
         record("pause", found)
     }
 
@@ -835,5 +836,154 @@ struct SyncControllerTests {
         h.probe.answer()
         h.controller.tick()
         #expect(h.controller.isPausedNow)
+    }
+
+    // MARK: Stop uploads completely (full stop, no breathing)
+
+    @Test func stopUploadsCompletelyNeverBreathes() {
+        let h = Harness("2026-10-12 14:00")
+        h.settings.stopUploadsCompletely = true
+        h.settings.pausePhotos = true
+        h.settings.pauseCloudKit = true
+        h.controller.start(registerHelper: {})
+        #expect(h.processes.paused == [.drive, .photos, .cloudKit])
+        let mark = h.processes.log.count
+        h.advance(60)
+        #expect(h.log(since: mark).isEmpty)
+        #expect(h.processes.paused == [.drive, .photos, .cloudKit])
+        #expect(h.processes.released.isEmpty)
+        #expect(h.controller.status == .paused(until: TestTime.date("2026-10-13 02:00")))
+        #expect(h.activity.holding)
+    }
+
+    @Test func stopUploadsCompletelyTicksKeepTargetsStopped() {
+        let h = Harness("2026-10-12 14:00")
+        h.settings.stopUploadsCompletely = true
+        h.controller.start(registerHelper: {})
+        for _ in 0..<4 {
+            h.advance(30)
+            h.controller.tick()
+            #expect(h.processes.paused == [.drive])
+            #expect(h.processes.released.isEmpty)
+        }
+        #expect(!h.processes.log.contains { $0.hasPrefix("release") })
+    }
+
+    @Test func stopUploadsCompletelyKeepsTheLaunchThaw() {
+        let h = Harness("2026-10-12 14:00")
+        h.settings.stopUploadsCompletely = true
+        h.controller.start(registerHelper: {})
+        h.controller.handleAppLaunch()
+        #expect(h.processes.paused.isEmpty)
+        #expect(h.controller.isPausedNow)
+        h.advance(9.9)
+        #expect(h.processes.paused.isEmpty)
+        h.advance(0.2)
+        #expect(h.processes.paused == [.drive])
+        let mark = h.processes.log.count
+        h.advance(10)
+        #expect(h.log(since: mark).isEmpty) // still no breathing after the thaw
+    }
+
+    @Test func stopUploadsCompletelySkipsTheHealthCheck() {
+        let h = Harness("2026-10-12 14:00")
+        h.settings.stopUploadsCompletely = true
+        h.controller.start(registerHelper: {})
+        h.controller.tick()
+        h.advance(30)
+        h.controller.tick()
+        #expect(h.probe.pings == 0) // a hang is expected here, so never probe
+        #expect(h.controller.isPausedNow)
+        #expect(h.processes.paused == [.drive])
+    }
+
+    @Test func probeInFlightWhenSwitchingToFullStopIsNoCooldown() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.controller.tick()
+        #expect(h.probe.pings == 1)
+        h.advance(1)
+        h.settings.stopUploadsCompletely = true
+        h.advance(5) // the probe deadline passes while fully stopped
+        #expect(h.controller.status == .paused(until: TestTime.date("2026-10-13 02:00")))
+        #expect(h.processes.paused == [.drive])
+    }
+
+    @Test func switchingOnMidBreathStopsAgainAndEndsBreathing() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.advance(1.9) // released since 1.8 s
+        #expect(h.processes.released == [.drive])
+        h.settings.stopUploadsCompletely = true
+        #expect(h.processes.paused == [.drive])
+        #expect(h.processes.released.isEmpty)
+        let mark = h.processes.log.count
+        h.advance(10)
+        #expect(h.log(since: mark).isEmpty)
+    }
+
+    @Test func switchingOffStartsBreathing() {
+        let h = Harness("2026-10-12 14:00")
+        h.settings.stopUploadsCompletely = true
+        h.controller.start(registerHelper: {})
+        h.advance(5)
+        h.settings.stopUploadsCompletely = false
+        #expect(h.processes.paused == [.drive])
+        h.expectNextBreathWithinTwoSeconds()
+        let mark = h.processes.log.count
+        h.advance(1.81)
+        #expect(h.log(since: mark) == ["release drive"])
+    }
+
+    @Test func switchingWhileSyncingChangesNothing() {
+        let h = Harness("2026-10-12 03:00")
+        h.controller.start(registerHelper: {})
+        h.settings.stopUploadsCompletely = true
+        h.advance(10)
+        #expect(h.processes.paused.isEmpty)
+        #expect(h.controller.status == .syncing(until: TestTime.date("2026-10-12 09:00")))
+    }
+
+    @Test func fullStopStillResumesOnEverySafetyEvent() throws {
+        let events: [(String, (Harness) throws -> Void)] = [
+            ("sleep", { $0.controller.handleWillSleep() }),
+            ("power-off", { $0.controller.handlePowerOff() }),
+            ("quit", { $0.controller.prepareToQuit() }),
+            ("helper disabled", { $0.helperState = .disabled; $0.controller.tick() }),
+            ("heartbeat failure", { try $0.breakFiles(); $0.controller.tick() }),
+            ("sync on", { $0.settings.mode = .alwaysSync })
+        ]
+        for (name, event) in events {
+            let h = Harness("2026-10-12 14:00")
+            h.settings.stopUploadsCompletely = true
+            h.controller.start(registerHelper: {})
+            #expect(h.processes.paused == [.drive], "\(name)")
+            try event(h)
+            #expect(h.processes.paused.isEmpty, "\(name)")
+            #expect(!h.activity.holding, "\(name)")
+            h.advance(30)
+            #expect(h.processes.paused.isEmpty, "\(name)")
+        }
+    }
+
+    @Test func fullStopWakeStopsAgainWithoutBreathing() {
+        let h = Harness("2026-10-12 14:00")
+        h.settings.stopUploadsCompletely = true
+        h.controller.start(registerHelper: {})
+        h.controller.handleWillSleep()
+        h.controller.handleWake()
+        #expect(h.processes.paused == [.drive])
+        let mark = h.processes.log.count
+        h.advance(10)
+        #expect(h.log(since: mark).isEmpty)
+    }
+
+    @Test func fullStopRepausesARespawnedProcess() {
+        let h = Harness("2026-10-12 14:00")
+        h.settings.stopUploadsCompletely = true
+        h.controller.start(registerHelper: {})
+        h.processes.resume([.drive]) // launchd replaced bird
+        h.processes.onPausedProcessExit?()
+        #expect(h.processes.paused == [.drive])
     }
 }

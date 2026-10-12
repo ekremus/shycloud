@@ -5,6 +5,8 @@ import os
 /// Decides whether sync should run and applies it idempotently (spec §2, §4, §5).
 /// Pausing is a deep pause: targets are frozen but breathe (`Breather`), thaw while apps launch,
 /// and a health check backs off for `cooldownDuration` if iCloud stops answering.
+/// With `AppSettings.stopUploadsCompletely` targets are held without breathing (full stop) and the
+/// health check is skipped, because apps waiting on iCloud are expected in that mode.
 @MainActor
 @Observable
 public final class SyncController {
@@ -38,6 +40,10 @@ public final class SyncController {
     @ObservationIgnored private let thawTimer: any OneShotTimer
     @ObservationIgnored private let probeTimer: any OneShotTimer
     @ObservationIgnored private let followUpTimer: any OneShotTimer
+    /// How the paused targets are held right now; nil while nothing is held.
+    @ObservationIgnored private var hold: Hold?
+    /// Last logged value of `stopUploadsCompletely`, so the log shows every change.
+    @ObservationIgnored private var loggedStopUploads: Bool?
     /// An app is launching: targets run until `thawTimer` fires.
     @ObservationIgnored private var isThawing = false
     /// The underlying call has not returned yet (even if it already timed out). Never start a second one.
@@ -175,6 +181,10 @@ public final class SyncController {
             if elapsed >= 0, elapsed < Self.powerOffHold { return }
             self.powerOffAt = nil
         }
+        if loggedStopUploads != settings.stopUploadsCompletely {
+            loggedStopUploads = settings.stopUploadsCompletely
+            Self.logger.notice("stop uploads completely: \(self.settings.stopUploadsCompletely ? "on" : "off", privacy: .public)")
+        }
         let cal = calendar()
         let schedule = settings.schedule
         // Credit a completed sync on this tick.
@@ -208,12 +218,7 @@ public final class SyncController {
                 // An app is launching; the status stays "paused" for these few seconds.
                 resumeEverything(reason: "launch thaw")
             } else {
-                let enabled = settings.enabledTargets
-                processes.resume(PauseTarget.allCases.filter { !enabled.contains($0) })
-                // During a release window the breather re-stops at its end; pausing now would cut the breath short.
-                if !breather.isReleased { processes.pause(enabled) }
-                if !breather.isRunning { Self.logger.notice("pause started") }
-                breather.start()
+                holdTargets()
             }
             runningSince = nil
             status = .paused(until: nextChange)
@@ -239,9 +244,33 @@ public final class SyncController {
         activity.setHolding(false)
     }
 
-    /// Stopped targets are only ever left with the breather running; this is the one way out.
+    /// Stops the enabled targets and resumes the others. Breathing unless `stopUploadsCompletely`.
+    private func holdTargets() {
+        let enabled = settings.enabledTargets
+        let wanted: Hold = settings.stopUploadsCompletely ? .fullStop : .breathing
+        processes.resume(PauseTarget.allCases.filter { !enabled.contains($0) })
+        switch wanted {
+        case .breathing:
+            // During a release window the breather re-stops at its end; pausing now would cut the breath short.
+            if !breather.isReleased { processes.pause(enabled) }
+            breather.start()
+        case .fullStop:
+            // Stop the breather first: a target released for a breath is stopped again by `pause`.
+            breather.stop()
+            processes.pause(enabled)
+        }
+        if hold == nil {
+            Self.logger.notice("pause started: \(wanted.rawValue, privacy: .public)")
+        } else if hold != wanted {
+            Self.logger.notice("pause switched to \(wanted.rawValue, privacy: .public)")
+        }
+        hold = wanted
+    }
+
+    /// Stopped targets are only ever left held (breathing or full stop); this is the one way out.
     private func resumeEverything(reason: String) {
-        if breather.isRunning { Self.logger.notice("resumed: \(reason, privacy: .public)") }
+        if hold != nil { Self.logger.notice("resumed: \(reason, privacy: .public)") }
+        hold = nil
         breather.stop()
         processes.resumeAll()
     }
@@ -271,6 +300,8 @@ public final class SyncController {
     }
 
     /// Health check (spec §4): only while targets are frozen and breathing, one call at a time.
+    /// Never in full stop (`stopUploadsCompletely`): there the call is expected to hang until the next
+    /// launch thaw, and a timeout must not start a cooldown that would let uploads run.
     private func probeIfPaused() {
         guard breather.isRunning, !isProbeInFlight else { return }
         isProbeInFlight = true
@@ -299,4 +330,12 @@ public final class SyncController {
             isHeartbeatWritten = false
         }
     }
+}
+
+/// How paused targets are held (spec §4.1).
+private enum Hold: String {
+    /// Stopped, released for `Breather.breathDuration` every `Breather.breathInterval`.
+    case breathing
+    /// Stopped until a launch thaw or resume (`AppSettings.stopUploadsCompletely`).
+    case fullStop = "full stop"
 }

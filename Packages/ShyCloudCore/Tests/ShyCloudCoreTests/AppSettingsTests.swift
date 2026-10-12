@@ -18,6 +18,7 @@ struct AppSettingsTests {
         #expect(!settings.pausePhotos)
         #expect(!settings.pausePhotoAnalysis)
         #expect(!settings.pauseCloudKit)
+        #expect(!settings.stopUploadsCompletely)
         #expect(settings.showInMenuBar)
         #expect(settings.lastSyncedAt == nil)
         #expect(settings.enabledTargets == [.drive])
@@ -30,6 +31,7 @@ struct AppSettingsTests {
         first.setSchedule(Schedule(start: ClockTime(hour: 22, minute: 15), end: ClockTime(hour: 6, minute: 0)))
         first.pausePhotos = true
         first.pauseCloudKit = true
+        first.stopUploadsCompletely = true
         first.showInMenuBar = false
         first.lastSyncedAt = Date(timeIntervalSince1970: 1_800_000_000)
 
@@ -38,6 +40,7 @@ struct AppSettingsTests {
         #expect(second.schedule == Schedule(start: ClockTime(hour: 22, minute: 15), end: ClockTime(hour: 6, minute: 0)))
         #expect(second.pausePhotos)
         #expect(second.pauseCloudKit)
+        #expect(second.stopUploadsCompletely)
         #expect(!second.showInMenuBar)
         #expect(second.lastSyncedAt == Date(timeIntervalSince1970: 1_800_000_000))
         #expect(second.enabledTargets == [.drive, .photos, .cloudKit])
@@ -58,11 +61,18 @@ struct AppSettingsTests {
         settings.pausePhotos = true
         settings.pausePhotoAnalysis = true
         settings.pauseCloudKit = true
+        settings.stopUploadsCompletely = true
         settings.setSchedule(Schedule(start: ClockTime(hour: 1, minute: 0), end: ClockTime(hour: 2, minute: 0)))
-        #expect(count == 5)
+        #expect(count == 6)
         settings.showInMenuBar = false
         settings.lastSyncedAt = .now
-        #expect(count == 5)
+        #expect(count == 6)
+    }
+
+    @Test func stopUploadsCompletelyUsesItsOwnKey() {
+        let defaults = freshDefaults()
+        defaults.set(true, forKey: "stopUploadsCompletely")
+        #expect(AppSettings(defaults: defaults).stopUploadsCompletely)
     }
 
     @Test func outOfRangeStoredTimeFallsBack() {

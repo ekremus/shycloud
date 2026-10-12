@@ -14,12 +14,13 @@ public final class AppSettings {
         static let pausePhotos = "pausePhotos"
         static let pausePhotoAnalysis = "pausePhotoAnalysis"
         static let pauseCloudKit = "pauseCloudKit"
+        static let stopUploadsCompletely = "stopUploadsCompletely"
         static let showInMenuBar = "showInMenuBar"
         static let lastSyncedAt = "lastSyncedAt"
     }
 
     @ObservationIgnored private let defaults: UserDefaults
-    /// Fires after mode, schedule or target changes. Not for showInMenuBar / lastSyncedAt.
+    /// Fires after mode, schedule, target or stop-uploads changes. Not for showInMenuBar / lastSyncedAt.
     @ObservationIgnored public var onChange: (@MainActor () -> Void)?
 
     public var mode: SyncMode {
@@ -38,6 +39,12 @@ public final class AppSettings {
 
     public var pauseCloudKit: Bool {
         didSet { defaults.set(pauseCloudKit, forKey: Key.pauseCloudKit); onChange?() }
+    }
+
+    /// While paused, keep targets stopped without breathing (spec §4.1). Stops uploads, but apps that
+    /// ask iCloud something wait until an app launch thaw or Sync On.
+    public var stopUploadsCompletely: Bool {
+        didSet { defaults.set(stopUploadsCompletely, forKey: Key.stopUploadsCompletely); onChange?() }
     }
 
     public var showInMenuBar: Bool {
@@ -67,6 +74,7 @@ public final class AppSettings {
         pausePhotos = defaults.bool(forKey: Key.pausePhotos)
         pausePhotoAnalysis = defaults.bool(forKey: Key.pausePhotoAnalysis)
         pauseCloudKit = defaults.bool(forKey: Key.pauseCloudKit)
+        stopUploadsCompletely = defaults.bool(forKey: Key.stopUploadsCompletely)
         showInMenuBar = defaults.object(forKey: Key.showInMenuBar) as? Bool ?? true
         lastSyncedAt = defaults.object(forKey: Key.lastSyncedAt) as? Date
     }
