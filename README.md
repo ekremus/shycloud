@@ -33,7 +33,7 @@ While paused, shyCloud stops iCloud Drive completely, so new files wait to uploa
 - **Sync On:** normal iCloud.
 - **Safe:** iCloud comes back when you quit shyCloud, when the Mac sleeps or logs out, and if shyCloud crashes.
 - **Stops uploads:** while paused, new files wait until sync resumes.
-- **Apps keep working:** when you open an app, iCloud runs normally for 10 seconds.
+- **Apps keep working:** when you open an app or switch to one, iCloud runs normally for 10 seconds.
 - **Breathing mode:** an optional lighter pause. Apps that ask iCloud something wait 2 seconds at most, but uploads keep going.
 - **Hideable:** you can remove the menu bar icon. shyCloud keeps running.
 - **Private:** no account, no tracking.
@@ -50,12 +50,12 @@ macOS has no public way to pause iCloud Drive. shyCloud stops the iCloud Drive p
 
 While sync is paused, `bird` stays stopped the whole time. In our test a new 2 GB file uploaded 0 MB this way.
 
-A stopped `bird` can make an app wait when it asks iCloud something. Steam, GeForce NOW and other Chromium apps do this when they open. Open or Save panels on iCloud folders do it too. So when you open an app, iCloud runs normally for 10 seconds, which ends most waits. If an app keeps waiting, open another app or choose Sync On.
+A stopped `bird` can make an app wait when it asks iCloud something. Steam, GeForce NOW and other Chromium apps do this when they open. Open or Save panels on iCloud folders do it too. So when you open an app or switch to one, like Finder, iCloud runs normally for 10 seconds, which ends most waits. Switching back to the same app within a minute does not do this again, so moving between apps does not keep iCloud running. If an app keeps waiting, open another app or choose Sync On.
 
 If you would rather apps never wait, turn on **Let apps reach iCloud while paused** in Settings. This is breathing mode:
 
 - `bird` is stopped but gets 0.2 seconds to run every 2 seconds. Apps get their answer in under 2 seconds.
-- When you open an app, iCloud runs normally for 10 seconds.
+- When you open an app or switch to one, iCloud runs normally for 10 seconds.
 - Every 30 seconds shyCloud checks that iCloud answers within 3 seconds. If it does not, iCloud runs normally for 10 minutes.
 
 In breathing mode the iCloud Drive process uses about a third of its normal CPU time in our tests, so it stops competing with your work. It does not stop uploads. New files keep uploading, because the transfer itself runs in a separate system process. The full results are in [docs/pause-method-study-2026-10-11.md](docs/pause-method-study-2026-10-11.md).

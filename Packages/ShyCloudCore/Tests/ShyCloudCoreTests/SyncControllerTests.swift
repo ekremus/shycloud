@@ -83,6 +83,8 @@ final class Harness {
         set { clock.now = newValue }
     }
     var helperState: SafetyHelperState = .working
+    /// Monotonic clock for the per-app activation debounce; `advance` moves it, wall-clock jumps don't.
+    var uptime: TimeInterval = 1000
     let settings: AppSettings
     let processes: FakeProcesses
     let activity = FakeActivity()
@@ -97,6 +99,7 @@ final class Harness {
         makeTimer: { [unowned self] leeway in self.clock.makeTimer(leeway: leeway) },
         now: { [unowned self] in self.date },
         calendar: { TestTime.calendar() },
+        uptime: { [unowned self] in self.uptime },
         helperState: { [unowned self] in self.helperState }
     )
 
@@ -115,7 +118,13 @@ final class Harness {
         files = SafetyFiles(directory: FileManager.default.temporaryDirectory.appending(path: name))
     }
 
-    func advance(_ seconds: TimeInterval) { clock.advance(by: seconds) }
+    func advance(_ seconds: TimeInterval) {
+        uptime += seconds
+        clock.advance(by: seconds)
+    }
+
+    /// Targets owned by ShyCloud: stopped, or running for a breath. Empty while thawed or resumed.
+    var held: Set<PauseTarget> { processes.paused.union(processes.released) }
 
     /// Log entries recorded after `mark`.
     func log(since mark: Int) -> [String] { Array(processes.log.dropFirst(mark)) }
@@ -579,6 +588,8 @@ struct SyncControllerTests {
             ("launch", { h.controller.handleAppLaunch() }),
             ("launch extends", { h.advance(4); h.controller.handleAppLaunch() }),
             ("thaw ends", { h.advance(10.1) }),
+            ("activation", { h.advance(0.9); h.controller.handleAppActivation(bundleID: "com.apple.finder") }),
+            ("activation thaw ends", { h.advance(10.1) }),
             ("untick optional", { h.advance(1.7); h.settings.pauseCloudKit = false }),
             ("sleep", { h.controller.handleWillSleep() }),
             ("wake", { h.advance(5); h.controller.handleWake() }),
@@ -666,6 +677,154 @@ struct SyncControllerTests {
         h.controller.handleWillSleep()
         h.controller.handleWake()
         #expect(h.processes.paused == [.drive])
+    }
+
+    // MARK: Activation thaw
+
+    @Test func activationThawConstants() {
+        #expect(SyncController.activationThawDuration == 10)
+        #expect(SyncController.activationDebounce == 60)
+    }
+
+    @Test func finderActivationThawsForTenSecondsThenBreathesAgain() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
+        #expect(h.held.isEmpty)
+        #expect(h.controller.status == .paused(until: TestTime.date("2026-10-13 02:00")))
+        #expect(h.activity.holding)
+        let mark = h.processes.log.count
+        h.advance(9.9)
+        #expect(h.log(since: mark).isEmpty)
+        h.advance(0.2)
+        #expect(h.held == [.drive])
+        h.expectNextBreathWithinTwoSeconds()
+    }
+
+    @Test func anyAppActivationThaws() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.controller.handleAppActivation(bundleID: "com.example.SomeEditor")
+        #expect(h.held.isEmpty)
+        h.advance(10.1)
+        #expect(h.held == [.drive])
+    }
+
+    @Test func sameAppThawsAtMostOncePerMinute() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
+        h.advance(10.1)
+        #expect(h.held == [.drive])
+        h.advance(49.7) // 59.8 s after the thaw
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
+        #expect(h.held == [.drive])
+        h.advance(0.3) // just past 60 s after the thaw
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
+        #expect(h.held.isEmpty)
+    }
+
+    @Test func ignoredActivationsDoNotPushTheDebounceBack() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
+        h.advance(30)
+        h.controller.handleAppActivation(bundleID: "com.apple.finder") // ignored
+        h.advance(30)
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
+        #expect(h.held.isEmpty)
+    }
+
+    @Test func debounceIsPerApp() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
+        h.advance(20)
+        #expect(h.held == [.drive])
+        h.controller.handleAppActivation(bundleID: "com.apple.Safari")
+        #expect(h.held.isEmpty)
+    }
+
+    @Test func debounceUsesTheInjectedClockNotTheWallClock() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
+        h.advance(10.1)
+        h.at("2026-10-12 16:00") // wall clock jumps, uptime does not
+        h.controller.apply()
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
+        #expect(h.held == [.drive])
+    }
+
+    @Test func activationExtendsALaunchThaw() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.controller.handleAppLaunch()
+        h.advance(6)
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
+        h.advance(6) // the launch thaw alone would have ended at 10 s
+        #expect(h.held.isEmpty)
+        h.advance(3.9)
+        #expect(h.held.isEmpty)
+        h.advance(0.2)
+        #expect(h.held == [.drive])
+    }
+
+    @Test func launchExtendsAnActivationThaw() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
+        h.advance(6)
+        h.controller.handleAppLaunch()
+        h.advance(9.9)
+        #expect(h.held.isEmpty)
+        h.advance(0.2)
+        #expect(h.held == [.drive])
+    }
+
+    @Test func activationWhileNotPausedIsIgnored() {
+        let h = Harness("2026-10-12 14:00")
+        h.settings.mode = .alwaysSync
+        h.controller.start(registerHelper: {})
+        let mark = h.processes.log.count
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
+        #expect(h.log(since: mark).isEmpty)
+        #expect(h.controller.status == .syncing(until: nil))
+        h.settings.mode = .alwaysPause
+        #expect(h.held == [.drive]) // no thaw carried over from the ignored activation
+        h.controller.handleAppActivation(bundleID: "com.apple.finder") // and its debounce was not used up
+        #expect(h.held.isEmpty)
+    }
+
+    @Test func activationDuringSleepOrAfterQuitIsIgnored() {
+        let h = Harness("2026-10-12 14:00")
+        h.controller.start(registerHelper: {})
+        h.controller.handleWillSleep()
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
+        h.controller.handleWake()
+        #expect(h.held == [.drive])
+        h.controller.prepareToQuit()
+        h.controller.handleAppActivation(bundleID: "com.apple.Safari")
+        h.advance(11)
+        #expect(h.held.isEmpty)
+        #expect(!h.activity.holding)
+    }
+
+    @Test func activationThawsInFullStop() {
+        let h = Harness("2026-10-12 14:00", stopUploadsCompletely: true)
+        h.controller.start(registerHelper: {})
+        h.controller.handleAppActivation(bundleID: "com.apple.finder")
+        #expect(h.held.isEmpty)
+        #expect(h.controller.isPausedNow)
+        h.advance(9.9)
+        #expect(h.held.isEmpty)
+        h.advance(0.2)
+        #expect(h.held == [.drive])
+        let mark = h.processes.log.count
+        h.advance(10)
+        #expect(h.log(since: mark).isEmpty) // still no breathing after the thaw
+        h.controller.handleAppActivation(bundleID: "com.apple.finder") // debounced
+        #expect(h.held == [.drive])
     }
 
     // MARK: Deep pause: health check

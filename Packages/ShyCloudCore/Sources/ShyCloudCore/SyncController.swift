@@ -4,7 +4,7 @@ import os
 
 /// Decides whether sync should run and applies it idempotently (spec §2, §4, §5).
 /// Pausing is a full stop by default (`AppSettings.stopUploadsCompletely`): targets are held without
-/// breathing and thaw while apps launch; the health check is skipped, because apps waiting on iCloud
+/// breathing and thaw while apps launch or come to the front; the health check is skipped, because apps waiting on iCloud
 /// are expected there. Opted-in breathing freezes targets but lets them breathe (`Breather`), and a
 /// health check backs off for `cooldownDuration` if iCloud stops answering.
 @MainActor
@@ -15,6 +15,10 @@ public final class SyncController {
     public static let powerOffHold: TimeInterval = 60
     /// Targets run this long after an app launches (extended by further launches).
     public static let launchThawDuration: TimeInterval = 10
+    /// Targets run this long after an app comes to the front (extends any thaw already running).
+    public static let activationThawDuration: TimeInterval = 10
+    /// The same app's activation thaws at most once in this period, so app switching doesn't keep iCloud thawed.
+    public static let activationDebounce: TimeInterval = 60
     /// A probe unanswered this long means apps are hanging on iCloud. Must exceed `Breather.breathInterval`.
     public static let probeTimeout: TimeInterval = 3.0
     /// After a probe timeout nothing is paused for this long.
@@ -34,6 +38,8 @@ public final class SyncController {
     @ObservationIgnored private let activity: any ActivityHolding
     @ObservationIgnored private let now: @MainActor () -> Date
     @ObservationIgnored private let calendar: @MainActor () -> Calendar
+    /// Monotonic seconds for the activation debounce (wall-clock changes must not reset it).
+    @ObservationIgnored private let uptime: @MainActor () -> TimeInterval
     @ObservationIgnored private let helperState: @MainActor () -> SafetyHelperState
     @ObservationIgnored private let probe: any ResponsivenessProbe
     @ObservationIgnored private let breather: Breather
@@ -44,8 +50,10 @@ public final class SyncController {
     @ObservationIgnored private var hold: Hold?
     /// Last logged value of `stopUploadsCompletely`, so the log shows every change.
     @ObservationIgnored private var loggedStopUploads: Bool?
-    /// An app is launching: targets run until `thawTimer` fires.
+    /// An app launched or came to the front: targets run until `thawTimer` fires.
     @ObservationIgnored private var isThawing = false
+    /// `uptime` of each app's last activation thaw, by bundle id.
+    @ObservationIgnored private var activationThawedAt: [String: TimeInterval] = [:]
     /// The underlying call has not returned yet (even if it already timed out). Never start a second one.
     @ObservationIgnored private var isProbeInFlight = false
     /// A probe timed out here; nothing pauses until `cooldownDuration` passes.
@@ -69,6 +77,7 @@ public final class SyncController {
         makeTimer: @MainActor (_ leeway: TimeInterval) -> any OneShotTimer,
         now: @escaping @MainActor () -> Date = { Date() },
         calendar: @escaping @MainActor () -> Calendar = { Calendar.current },
+        uptime: @escaping @MainActor () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
         helperState: @escaping @MainActor () -> SafetyHelperState
     ) {
         self.settings = settings
@@ -77,6 +86,7 @@ public final class SyncController {
         self.activity = activity
         self.now = now
         self.calendar = calendar
+        self.uptime = uptime
         self.helperState = helperState
         self.probe = probe
         breather = Breather(
@@ -114,10 +124,28 @@ public final class SyncController {
     /// `launchThawDuration`, extended by every further launch, so it can talk to iCloud freely.
     public func handleAppLaunch() {
         guard !isAsleep, !isTerminating else { return }
-        thawTimer.schedule(after: Self.launchThawDuration) { [weak self] in self?.endThaw() }
+        thaw(for: Self.launchThawDuration, reason: "launch")
+    }
+
+    /// An app came to the front (workspace `didActivateApplicationNotification`): while paused, let
+    /// targets run for `activationThawDuration` so it can reach iCloud right away (e.g. Finder).
+    /// Each app does this at most once per `activationDebounce`; ignored while not paused.
+    public func handleAppActivation(bundleID: String) {
+        guard !isAsleep, !isTerminating, isPausedNow else { return }
+        let time = uptime()
+        if let last = activationThawedAt[bundleID], time >= last, time - last < Self.activationDebounce { return }
+        activationThawedAt = activationThawedAt.filter { time >= $0.value && time - $0.value < Self.activationDebounce }
+        activationThawedAt[bundleID] = time
+        Self.logger.notice("activation thaw: \(bundleID, privacy: .public)")
+        thaw(for: Self.activationThawDuration, reason: "activation")
+    }
+
+    /// Starts a thaw, or extends the running one to `duration` from now.
+    private func thaw(for duration: TimeInterval, reason: String) {
+        thawTimer.schedule(after: duration) { [weak self] in self?.endThaw() }
         guard !isThawing else { return }
         isThawing = true
-        if isPausedNow { Self.logger.notice("launch thaw started") }
+        if isPausedNow { Self.logger.notice("\(reason, privacy: .public) thaw started") }
         if isPausedNow { apply() }
     }
 
@@ -215,8 +243,8 @@ public final class SyncController {
                 return
             }
             if isThawing {
-                // An app is launching; the status stays "paused" for these few seconds.
-                resumeEverything(reason: "launch thaw")
+                // An app is launching or came to the front; the status stays "paused" for these few seconds.
+                resumeEverything(reason: "thaw")
             } else {
                 holdTargets()
             }
@@ -278,7 +306,7 @@ public final class SyncController {
     private func endThaw() {
         guard isThawing else { return }
         isThawing = false
-        Self.logger.notice("launch thaw ended")
+        Self.logger.notice("thaw ended")
         if isPausedNow { apply() }
     }
 
@@ -336,6 +364,6 @@ public final class SyncController {
 private enum Hold: String {
     /// Stopped, released for `Breather.breathDuration` every `Breather.breathInterval`.
     case breathing
-    /// Stopped until a launch thaw or resume (`AppSettings.stopUploadsCompletely`).
+    /// Stopped until a thaw or resume (`AppSettings.stopUploadsCompletely`).
     case fullStop = "full stop"
 }
